@@ -141,9 +141,11 @@ const loginUser = async (req, res) => {
     // 6) If everything ok, send token to client
     createSendToken(teamMember, 200, res, 'Login successful');
   } catch (error) {
+    console.error('User login error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -199,9 +201,11 @@ const loginManager = async (req, res) => {
     // 6) If everything ok, send token to client
     createSendToken(manager, 200, res, 'Login successful');
   } catch (error) {
+    console.error('Manager login error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -232,9 +236,11 @@ const forgotPasswordTeamMember = async (req, res) => {
       resetToken // Only for development - remove in production
     });
   } catch (error) {
+    console.error('Forgot password team member error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'There was an error sending the email. Try again later.'
+      message: 'There was an error sending the email. Try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -265,9 +271,11 @@ const forgotPasswordManager = async (req, res) => {
       resetToken // Only for development - remove in production
     });
   } catch (error) {
+    console.error('Forgot password manager error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'There was an error sending the email. Try again later.'
+      message: 'There was an error sending the email. Try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -303,9 +311,11 @@ const resetPasswordTeamMember = async (req, res) => {
     // 4) Log the team member in, send JWT
     createSendToken(teamMember, 200, res, 'Password reset successful');
   } catch (error) {
+    console.error('Reset password team member error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Password reset failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -341,9 +351,11 @@ const resetPasswordManager = async (req, res) => {
     // 4) Log the manager in, send JWT
     createSendToken(manager, 200, res, 'Password reset successful');
   } catch (error) {
+    console.error('Reset password manager error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Password reset failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -369,9 +381,11 @@ const updatePasswordTeamMember = async (req, res) => {
     // 4) Log team member in, send JWT
     createSendToken(teamMember, 200, res, 'Password updated successfully');
   } catch (error) {
+    console.error('Update password team member error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Password update failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -397,9 +411,11 @@ const updatePasswordManager = async (req, res) => {
     // 4) Log manager in, send JWT
     createSendToken(manager, 200, res, 'Password updated successfully');
   } catch (error) {
+    console.error('Update password manager error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Password update failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -434,9 +450,11 @@ const verifyEmailTeamMember = async (req, res) => {
       message: 'Email verified successfully'
     });
   } catch (error) {
+    console.error('Verify email team member error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Email verification failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };
@@ -471,9 +489,11 @@ const verifyEmailManager = async (req, res) => {
       message: 'Email verified successfully'
     });
   } catch (error) {
+    console.error('Verify email manager error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong!'
+      message: 'Email verification failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong!'
     });
   }
 };

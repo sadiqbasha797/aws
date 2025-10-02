@@ -7,7 +7,9 @@ const signToken = (id, role = 'user') => {
 };
 
 const createSendToken = (user, statusCode, res, message = 'Success') => {
-  const token = signToken(user._id, user.role || 'user');
+  // Determine role based on the model collection name
+  const role = user.constructor.modelName === 'Manager' ? 'manager' : 'user';
+  const token = signToken(user._id, role);
   
   // Remove password from output
   user.password = undefined;
@@ -23,7 +25,8 @@ const createSendToken = (user, statusCode, res, message = 'Success') => {
     message,
     token,
     data: {
-      user
+      user,
+      role
     }
   });
 };

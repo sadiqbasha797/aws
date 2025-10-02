@@ -31,7 +31,6 @@ const teamMemberSchema = new mongoose.Schema({
   },
   da_id: {
     type: String,
-    required: [true, 'DA ID is required'],
     unique: true,
     trim: true,
     uppercase: true,
@@ -100,6 +99,17 @@ teamMemberSchema.index({ da_id: 1 });
 teamMemberSchema.index({ managerId: 1 });
 teamMemberSchema.index({ passwordResetToken: 1 });
 teamMemberSchema.index({ emailVerificationToken: 1 });
+
+// Pre-save middleware to generate DA ID if not provided
+teamMemberSchema.pre('save', function(next) {
+  if (!this.da_id) {
+    // Generate a DA ID: DA + timestamp + random number
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    this.da_id = `DA${timestamp}${random}`;
+  }
+  next();
+});
 
 // Pre-save middleware to hash password
 teamMemberSchema.pre('save', async function(next) {
