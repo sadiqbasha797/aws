@@ -36,6 +36,12 @@ const teamMemberSchema = new mongoose.Schema({
     uppercase: true,
     match: [/^[a-zA-Z0-9]+$/, 'DA ID should contain only alphanumeric characters']
   },
+  workerId: {
+    type: String,
+    unique: true,
+    trim: true,
+    match: [/^[0-9]+$/, 'Worker ID should contain only numbers']
+  },
   managerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Manager',
@@ -96,6 +102,7 @@ teamMemberSchema.virtual('isLocked').get(function() {
 // Index for better query performance
 teamMemberSchema.index({ email: 1 });
 teamMemberSchema.index({ da_id: 1 });
+teamMemberSchema.index({ workerId: 1 });
 teamMemberSchema.index({ managerId: 1 });
 teamMemberSchema.index({ passwordResetToken: 1 });
 teamMemberSchema.index({ emailVerificationToken: 1 });

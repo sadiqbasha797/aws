@@ -105,7 +105,7 @@ const getMe = async (req, res) => {
 // Create team member
 const createTeamMember = async (req, res) => {
   try {
-    const { name, email, password, phone, managerId, da_id } = req.body;
+    const { name, email, password, phone, managerId, da_id, workerId } = req.body;
 
     // Check if manager exists
     const manager = await Manager.findById(managerId);
@@ -131,6 +131,7 @@ const createTeamMember = async (req, res) => {
       password,
       phone,
       da_id,
+      workerId,
       managerId
     });
 
@@ -151,6 +152,7 @@ const createTeamMember = async (req, res) => {
           email: teamMember.email,
           phone: teamMember.phone,
           da_id: teamMember.da_id,
+          workerId: teamMember.workerId,
           managerId: teamMember.managerId,
           isActive: teamMember.isActive,
           isEmailVerified: teamMember.isEmailVerified,
@@ -169,12 +171,13 @@ const createTeamMember = async (req, res) => {
 // Update team member
 const updateTeamMember = async (req, res) => {
   try {
-    const { name, phone, managerId, da_id } = req.body;
+    const { name, phone, managerId, da_id, workerId } = req.body;
     const updateData = {};
 
     if (name) updateData.name = name;
     if (phone) updateData.phone = phone;
     if (da_id) updateData.da_id = da_id;
+    if (workerId) updateData.workerId = workerId;
     if (managerId) {
       // Check if manager exists
       const manager = await Manager.findById(managerId);

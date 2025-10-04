@@ -44,7 +44,9 @@ const getAllReliabilityData = async (req, res) => {
       filter.$or = [
         { workerId: { $regex: req.query.search, $options: 'i' } },
         { daId: { $regex: req.query.search, $options: 'i' } },
-        { managerId: { $regex: req.query.search, $options: 'i' } }
+        { managerId: { $regex: req.query.search, $options: 'i' } },
+        { processname: { $regex: req.query.search, $options: 'i' } },
+        { job_id: { $regex: req.query.search, $options: 'i' } }
       ];
     }
 
@@ -169,6 +171,8 @@ const createReliabilityData = async (req, res) => {
       workerId,
       daId,
       managerId,
+      processname,
+      job_id,
       totalTasks,
       totalOpportunities,
       totalSegmentsMatching,
@@ -208,6 +212,8 @@ const createReliabilityData = async (req, res) => {
       workerId,
       daId,
       managerId: managerId || req.user.managerId || req.user._id.toString(),
+      processname,
+      job_id,
       totalTasks,
       totalOpportunities,
       totalSegmentsMatching,
@@ -244,6 +250,8 @@ const createReliabilityData = async (req, res) => {
 const updateReliabilityData = async (req, res) => {
   try {
     const {
+      processname,
+      job_id,
       totalTasks,
       totalOpportunities,
       totalSegmentsMatching,
@@ -256,6 +264,8 @@ const updateReliabilityData = async (req, res) => {
     } = req.body;
 
     const updateData = {};
+    if (processname !== undefined) updateData.processname = processname;
+    if (job_id !== undefined) updateData.job_id = job_id;
     if (totalTasks !== undefined) updateData.totalTasks = totalTasks;
     if (totalOpportunities !== undefined) updateData.totalOpportunities = totalOpportunities;
     if (totalSegmentsMatching !== undefined) updateData.totalSegmentsMatching = totalSegmentsMatching;

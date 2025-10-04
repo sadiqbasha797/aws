@@ -22,6 +22,19 @@ const reliabilityDataSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^[a-zA-Z0-9]+$/, 'Manager ID should contain only alphanumeric characters']
   },
+  processname: {
+    type: String,
+    required: [true, 'Process name is required'],
+    trim: true,
+    maxlength: [100, 'Process name cannot exceed 100 characters']
+  },
+  job_id: {
+    type: String,
+    required: [true, 'Job ID is required'],
+    trim: true,
+    unique: true,
+    match: [/^[a-zA-Z0-9_-]+$/, 'Job ID should contain only alphanumeric characters, underscores, and hyphens']
+  },
   totalTasks: {
     type: Number,
     required: [true, 'Total tasks is required'],
@@ -122,6 +135,8 @@ reliabilityDataSchema.virtual('calculatedDefectRate').get(function() {
 reliabilityDataSchema.index({ workerId: 1 });
 reliabilityDataSchema.index({ daId: 1 });
 reliabilityDataSchema.index({ managerId: 1 });
+reliabilityDataSchema.index({ processname: 1 });
+reliabilityDataSchema.index({ job_id: 1 });
 reliabilityDataSchema.index({ overallReliabilityScore: -1 });
 reliabilityDataSchema.index({ year: -1, month: -1 });
 reliabilityDataSchema.index({ isActive: 1 });
