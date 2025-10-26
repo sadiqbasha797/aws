@@ -1,0 +1,13 @@
+<!-- Login Layout (No sidebar/navbar) -->
+<div *ngIf="isLoginPage()" class="login-layout">
+  <router-outlet />
+</div>
+
+<!-- Dashboard Layout (With sidebar and navbar) -->
+<div *ngIf="!isLoginPage()" class="dashboard-layout">
+  <app-sidebar></app-sidebar>
+  <app-navbar></app-navbar>
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>

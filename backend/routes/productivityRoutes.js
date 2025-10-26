@@ -6,6 +6,7 @@ const {
   createProductivityData,
   updateProductivityData,
   deleteProductivityData,
+  getAggregatedTeamPerformance,
   getTopPerformers,
   getProductivityStats,
   getProductivityByWeek,
@@ -29,6 +30,7 @@ router.use(restrictTo('manager'));
 
 // Basic CRUD operations
 router.get('/', getAllProductivityData);
+router.get('/aggregated', getAggregatedTeamPerformance);
 router.get('/stats', getProductivityStats);
 router.get('/top-performers', getTopPerformers);
 router.get('/trends', getPerformanceTrends);

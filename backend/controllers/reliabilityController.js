@@ -184,8 +184,10 @@ const createReliabilityData = async (req, res) => {
       year
     } = req.body;
 
-    // Check if team member with daId exists
-    const teamMember = await TeamMember.findOne({ da_id: daId });
+    // Check if team member with daId exists (case-insensitive search)
+    const teamMember = await TeamMember.findOne({ 
+      da_id: { $regex: new RegExp(`^${daId}$`, 'i') }
+    });
     if (!teamMember) {
       return res.status(400).json({
         status: 'error',
@@ -328,6 +330,97 @@ const deleteReliabilityData = async (req, res) => {
       message: 'Reliability data deleted successfully'
     });
   } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong!'
+    });
+  }
+};
+
+// Get aggregated team member performance (Manager only)
+const getAggregatedTeamPerformance = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const managerId = req.user.managerId || req.user._id.toString();
+
+    // Build match criteria
+    const matchCriteria = { managerId, isActive: true };
+    
+    if (req.query.year) {
+      matchCriteria.year = parseInt(req.query.year);
+    }
+    if (req.query.month) {
+      matchCriteria.month = parseInt(req.query.month);
+    }
+    if (req.query.search) {
+      matchCriteria.$or = [
+        { daId: { $regex: req.query.search, $options: 'i' } },
+        { processname: { $regex: req.query.search, $options: 'i' } }
+      ];
+    }
+
+    const aggregatedData = await ReliabilityData.aggregate([
+      { $match: matchCriteria },
+      {
+        $group: {
+          _id: '$daId',
+          daId: { $first: '$daId' },
+          avgReliabilityScore: { $avg: '$overallReliabilityScore' },
+          avgSegmentAccuracy: { $avg: '$segmentAccuracy' },
+          avgLabelAccuracy: { $avg: '$labelAccuracy' },
+          avgDefectRate: { $avg: '$defectRate' },
+          totalTasks: { $sum: '$totalTasks' },
+          totalOpportunities: { $sum: '$totalOpportunities' },
+          totalDefects: { $sum: '$totalDefects' },
+          recordCount: { $sum: 1 },
+          latestRecord: { $max: '$createdAt' },
+          processes: { $addToSet: '$processname' }
+        }
+      },
+      { $sort: { avgReliabilityScore: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          daId: 1,
+          overallReliabilityScore: { $round: ['$avgReliabilityScore', 2] },
+          segmentAccuracy: { $round: ['$avgSegmentAccuracy', 2] },
+          labelAccuracy: { $round: ['$avgLabelAccuracy', 2] },
+          defectRate: { $round: ['$avgDefectRate', 2] },
+          totalTasks: 1,
+          totalOpportunities: 1,
+          totalDefects: 1,
+          recordCount: 1,
+          latestRecord: 1,
+          processes: 1
+        }
+      }
+    ]);
+
+    // Get total count for pagination
+    const totalCount = await ReliabilityData.aggregate([
+      { $match: matchCriteria },
+      { $group: { _id: '$daId' } },
+      { $count: 'total' }
+    ]);
+
+    const total = totalCount.length > 0 ? totalCount[0].total : 0;
+
+    res.status(200).json({
+      status: 'success',
+      results: aggregatedData.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: {
+        reliabilityData: aggregatedData
+      }
+    });
+  } catch (error) {
+    console.error('Error in getAggregatedTeamPerformance:', error);
     res.status(500).json({
       status: 'error',
       message: 'Something went wrong!'
@@ -493,6 +586,7 @@ module.exports = {
   createReliabilityData,
   updateReliabilityData,
   deleteReliabilityData,
+  getAggregatedTeamPerformance,
   getTopPerformers,
   getPerformanceStats,
   getUserPerformanceHistory,

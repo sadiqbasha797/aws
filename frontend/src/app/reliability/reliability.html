@@ -1,0 +1,565 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Reliability Management</h1>
+      <p class="text-gray-600 mt-1">
+        <span *ngIf="userRole === 'manager'">Manage and monitor team reliability performance</span>
+        <span *ngIf="userRole !== 'manager'">View your reliability performance data</span>
+      </p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <button (click)="toggleFilters()" class="btn-secondary">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+      </button>
+      <button *ngIf="userRole === 'manager'" (click)="toggleView()" class="btn-secondary">
+        {{ showAggregatedView ? 'Show Individual Records' : 'Show Team Summary' }}
+      </button>
+      <button *ngIf="userRole === 'manager'" (click)="showCreateForm()" class="btn-primary">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        Add Reliability Data
+      </button>
+    </div>
+  </div>
+
+  <!-- Success/Error Messages -->
+  <div *ngIf="successMessage" class="bg-green-50 border border-green-200 rounded-md p-3">
+    <div class="flex">
+      <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clip-rule="evenodd" />
+      </svg>
+      <span class="text-sm text-green-700">{{ successMessage }}</span>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 rounded-md p-3">
+    <div class="flex">
+      <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+          clip-rule="evenodd" />
+      </svg>
+      <span class="text-sm text-red-700">{{ errorMessage }}</span>
+    </div>
+  </div>
+
+  <!-- Toggleable Filters Section -->
+  <div *ngIf="showFilters" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900">Filters</h3>
+      <button (click)="toggleFilters()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+        <select [(ngModel)]="filters.year" class="aws-input">
+          <option *ngFor="let year of getYearOptions()" [value]="year">{{ year }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+        <select [(ngModel)]="filters.month" class="aws-input">
+          <option [value]="undefined">All Months</option>
+          <option *ngFor="let month of getMonthOptions()" [value]="month.value">{{ month.label }}</option>
+        </select>
+      </div>
+
+      <div *ngIf="userRole === 'manager'">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+        <input type="text" [(ngModel)]="filters.search" placeholder="Worker ID, DA ID, Process..." class="aws-input" />
+      </div>
+
+      <div *ngIf="userRole === 'manager'">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Min Score</label>
+        <input type="number" [(ngModel)]="filters.minScore" min="0" max="100" placeholder="0" class="aws-input" />
+      </div>
+
+      <div *ngIf="userRole === 'manager'">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Max Score</label>
+        <input type="number" [(ngModel)]="filters.maxScore" min="0" max="100" placeholder="100" class="aws-input" />
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+      <button (click)="clearFilters()" class="btn-secondary">Clear Filters</button>
+      <button (click)="applyFilters()" class="btn-primary">Apply Filters</button>
+    </div>
+  </div>
+
+  <!-- Team Overview - Show when no team member is selected -->
+  <div *ngIf="userRole === 'manager' && !selectedTeamMember">
+    <!-- Performance Stats -->
+    <div *ngIf="performanceStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-3 bg-blue-100 rounded-lg">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Team Members</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ reliabilityData.length }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-3 bg-green-100 rounded-lg">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Avg Team Score</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ performanceStats.avgReliabilityScore | number:'1.1-1' }}%
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-3 bg-orange-100 rounded-lg">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Total Tasks</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ performanceStats.totalTasks | number }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-3 bg-red-100 rounded-lg">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Avg Defect Rate</p>
+            <p class="text-2xl font-semibold text-gray-900">{{ performanceStats.avgDefectRate | number:'1.1-1' }}%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Member Cards -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Team Members</h3>
+        <p class="text-sm text-gray-600 mt-1">Click on a team member to view detailed analytics</p>
+      </div>
+
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let member of reliabilityData" (click)="selectTeamMember(member)"
+            class="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 p-6 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all duration-200">
+
+            <!-- Member Header -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span class="text-orange-600 font-semibold text-lg">{{ member.daId.substring(0, 2).toUpperCase()
+                    }}</span>
+                </div>
+                <div class="ml-3">
+                  <h4 class="text-lg font-semibold text-gray-900">{{ member.daId }}</h4>
+                  <p class="text-sm text-gray-500">{{ member.recordCount }} records</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-bold" [class]="getGradeColor(member.overallReliabilityScore)">
+                  {{ member.overallReliabilityScore | number:'1.1-1' }}%
+                </div>
+                <div class="text-xs font-medium" [class]="getGradeColor(member.overallReliabilityScore)">
+                  Grade {{ getPerformanceGrade(member.overallReliabilityScore) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="text-center">
+                <div class="text-lg font-semibold text-gray-900">{{ member.totalTasks }}</div>
+                <div class="text-xs text-gray-500">Total Tasks</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-gray-900">{{ member.totalOpportunities }}</div>
+                <div class="text-xs text-gray-500">Opportunities</div>
+              </div>
+            </div>
+
+            <!-- Processes -->
+            <div class="mb-4">
+              <div class="text-xs text-gray-500 mb-1">Processes:</div>
+              <div class="flex flex-wrap gap-1">
+                <span *ngFor="let process of member.processes?.slice(0, 2)"
+                  class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                  {{ process }}
+                </span>
+                <span *ngIf="(member.processes?.length || 0) > 2"
+                  class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
+                  +{{ (member.processes?.length || 0) - 2 }} more
+                </span>
+              </div>
+            </div>
+
+            <!-- View Details Button -->
+            <div class="flex justify-end">
+              <span class="text-sm text-orange-600 font-medium">View Details →</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="reliabilityData.length === 0 && !isLoading" class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Team Members Found</h3>
+          <p class="text-gray-500">Add some reliability data to see team member analytics.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team Member Detail View -->
+  <div *ngIf="selectedTeamMember" class="space-y-6">
+    <!-- Back Button and Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <button (click)="backToOverview()" class="btn-secondary mr-4">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Team
+        </button>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">{{ selectedTeamMember.daId }} - Detailed Analytics</h2>
+          <p class="text-gray-600">Performance analysis and individual records</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Member Stats Cards -->
+    <div *ngIf="teamMemberStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Average Score</p>
+            <p class="text-2xl font-bold" [class]="getGradeColor(teamMemberStats.avgReliability)">
+              {{ teamMemberStats.avgReliability }}%
+            </p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-lg">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Consistency Score</p>
+            <p class="text-2xl font-bold text-blue-600">{{ teamMemberStats.consistencyScore }}%</p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-lg">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Performance Trend</p>
+            <p class="text-2xl font-bold" [class]="teamMemberStats.trend >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ teamMemberStats.trend >= 0 ? '+' : '' }}{{ teamMemberStats.trend }}%
+            </p>
+          </div>
+          <div class="p-3" [class]="teamMemberStats.trend >= 0 ? 'bg-green-100' : 'bg-red-100'">
+            <svg class="w-6 h-6" [class]="teamMemberStats.trend >= 0 ? 'text-green-600' : 'text-red-600'" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="teamMemberStats.trend >= 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 17l9.2-9.2M17 17V7h-10" />
+              <path *ngIf="teamMemberStats.trend < 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 7l-9.2 9.2M7 7v10h10" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Records</p>
+            <p class="text-2xl font-bold text-gray-900">{{ teamMemberStats.totalRecords }}</p>
+          </div>
+          <div class="p-3 bg-purple-100 rounded-lg">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Analysis -->
+    <div *ngIf="teamMemberStats" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Best vs Worst Performance -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Range</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+            <div>
+              <p class="text-sm font-medium text-green-800">Best Performance</p>
+              <p class="text-lg font-bold text-green-600">{{ teamMemberStats.bestPerformance.overallReliabilityScore }}%
+              </p>
+              <p class="text-xs text-green-600">{{ teamMemberStats.bestPerformance.processname }}</p>
+            </div>
+            <div class="text-green-600">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-red-50 rounded-lg">
+            <div>
+              <p class="text-sm font-medium text-red-800">Needs Improvement</p>
+              <p class="text-lg font-bold text-red-600">{{ teamMemberStats.worstPerformance.overallReliabilityScore }}%
+              </p>
+              <p class="text-xs text-red-600">{{ teamMemberStats.worstPerformance.processname }}</p>
+            </div>
+            <div class="text-red-600">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Process Breakdown -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Process Breakdown</h3>
+        <div class="space-y-3">
+          <div *ngFor="let process of teamMemberStats.processes"
+            class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <span class="font-medium text-gray-900">{{ process }}</span>
+            <span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Active</span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p class="text-lg font-semibold text-gray-900">{{ teamMemberStats.avgDefectRate }}%</p>
+              <p class="text-xs text-gray-500">Avg Defect Rate</p>
+            </div>
+            <div>
+              <p class="text-lg font-semibold text-gray-900">{{ teamMemberStats.avgSegmentAccuracy }}%</p>
+              <p class="text-xs text-gray-500">Avg Accuracy</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Individual Records Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Individual Records</h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opportunities
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Defects</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let record of teamMemberDetails" class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ formatDate(record.createdAt!) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.processname }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.totalTasks }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.totalOpportunities }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.totalDefects }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm font-medium" [class]="getGradeColor(record.overallReliabilityScore)">
+                  {{ record.overallReliabilityScore | number:'1.1-1' }}%
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  [class]="getGradeColor(record.overallReliabilityScore)">
+                  {{ getPerformanceGrade(record.overallReliabilityScore) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+</div>
+
+<!-- Create/Edit Form Modal (Manager Only) -->
+<div *ngIf="showForm && userRole === 'manager'"
+  class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">
+          {{ isEditMode ? 'Edit' : 'Create' }} Reliability Data
+        </h3>
+        <button (click)="cancelForm()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form (ngSubmit)="saveReliabilityData()" #reliabilityFormRef="ngForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Worker ID *</label>
+            <input type="text" [(ngModel)]="reliabilityForm.workerId" name="workerId" required class="aws-input"
+              placeholder="Enter worker ID" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">DA ID *</label>
+            <select [(ngModel)]="reliabilityForm.daId" name="daId" required class="aws-input">
+              <option value="">Select DA ID</option>
+              <option *ngFor="let member of availableTeamMembers" [value]="member.da_id">
+                {{ member.da_id }} - {{ member.name }}
+              </option>
+            </select>
+            <small class="text-gray-500 text-xs mt-1" *ngIf="availableDaIdsString">
+              Available: {{ availableDaIdsString }}
+            </small>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Process Name *</label>
+            <input type="text" [(ngModel)]="reliabilityForm.processname" name="processname" required class="aws-input"
+              placeholder="Enter process name" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Job ID *</label>
+            <input type="text" [(ngModel)]="reliabilityForm.job_id" name="job_id" required class="aws-input"
+              placeholder="Enter job ID" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Total Tasks *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.totalTasks" name="totalTasks" required min="0"
+              class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Total Opportunities *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.totalOpportunities" name="totalOpportunities" required
+              min="1" class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Segments Matching *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.totalSegmentsMatching" name="totalSegmentsMatching"
+              required min="0" class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Labels Matching *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.totalLabelMatching" name="totalLabelMatching" required
+              min="0" class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Total Defects *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.totalDefects" name="totalDefects" required min="0"
+              class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Overall Reliability Score *</label>
+            <input type="number" [(ngModel)]="reliabilityForm.overallReliabilityScore" name="overallReliabilityScore"
+              required min="0" max="100" step="0.01" class="aws-input" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Month *</label>
+            <select [(ngModel)]="reliabilityForm.month" name="month" required class="aws-input">
+              <option *ngFor="let month of getMonthOptions()" [value]="month.value">{{ month.label }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Year *</label>
+            <select [(ngModel)]="reliabilityForm.year" name="year" required class="aws-input">
+              <option *ngFor="let year of getYearOptions()" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" (click)="cancelForm()" class="btn-secondary">Cancel</button>
+          <button type="submit" [disabled]="isLoading || reliabilityFormRef.invalid" class="btn-primary">
+            <span *ngIf="isLoading" class="animate-spin h-4 w-4 mr-2">⟳</span>
+            {{ isLoading ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

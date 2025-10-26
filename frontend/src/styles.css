@@ -1,0 +1,90 @@
+/* AWS Theme Colors and Global Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "tailwindcss";
+/* AWS Brand Colors */
+:root {
+  --aws-orange: #FF9900;
+  --aws-dark-orange: #E67E00;
+  --aws-blue: #146EB4;
+  --aws-dark-blue: #0F4C75;
+  --aws-gray: #232F3E;
+  --aws-light-gray: #F2F3F3;
+  --aws-dark-gray: #16191F;
+  --aws-white: #FFFFFF;
+  --aws-success: #10B981;
+  --aws-warning: #F59E0B;
+  --aws-error: #EF4444;
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Amazon Ember', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--aws-light-gray);
+  color: var(--aws-gray);
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom AWS-themed components */
+.aws-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.aws-button-primary {
+  background-color: #f97316;
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.aws-button-primary:hover {
+  background-color: #ea580c;
+}
+
+.aws-button-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.aws-button-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.aws-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.aws-input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.aws-sidebar {
+  background-color: #1f2937;
+  color: white;
+}
+
+.aws-navbar {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}

@@ -164,11 +164,43 @@ reliabilityDataSchema.pre('save', function(next) {
   next();
 });
 
-// Static method to get top performers
+// Static method to get top performers (aggregated by team member)
 reliabilityDataSchema.statics.getTopPerformers = function(managerId, limit = 10) {
-  return this.find({ managerId, isActive: true })
-    .sort({ overallReliabilityScore: -1 })
-    .limit(limit);
+  return this.aggregate([
+    { $match: { managerId, isActive: true } },
+    {
+      $group: {
+        _id: '$daId',
+        daId: { $first: '$daId' },
+        avgReliabilityScore: { $avg: '$overallReliabilityScore' },
+        avgSegmentAccuracy: { $avg: '$segmentAccuracy' },
+        avgLabelAccuracy: { $avg: '$labelAccuracy' },
+        avgDefectRate: { $avg: '$defectRate' },
+        totalTasks: { $sum: '$totalTasks' },
+        totalOpportunities: { $sum: '$totalOpportunities' },
+        totalDefects: { $sum: '$totalDefects' },
+        recordCount: { $sum: 1 },
+        latestRecord: { $max: '$createdAt' }
+      }
+    },
+    { $sort: { avgReliabilityScore: -1 } },
+    { $limit: limit },
+    {
+      $project: {
+        _id: 0,
+        daId: 1,
+        overallReliabilityScore: { $round: ['$avgReliabilityScore', 2] },
+        segmentAccuracy: { $round: ['$avgSegmentAccuracy', 2] },
+        labelAccuracy: { $round: ['$avgLabelAccuracy', 2] },
+        defectRate: { $round: ['$avgDefectRate', 2] },
+        totalTasks: 1,
+        totalOpportunities: 1,
+        totalDefects: 1,
+        recordCount: 1,
+        latestRecord: 1
+      }
+    }
+  ]);
 };
 
 // Static method to get performance statistics

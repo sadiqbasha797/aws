@@ -6,6 +6,7 @@ const {
   createReliabilityData,
   updateReliabilityData,
   deleteReliabilityData,
+  getAggregatedTeamPerformance,
   getTopPerformers,
   getPerformanceStats,
   getUserPerformanceHistory,
@@ -27,6 +28,7 @@ router.use(restrictTo('manager'));
 
 // Basic CRUD operations
 router.get('/', getAllReliabilityData);
+router.get('/aggregated', getAggregatedTeamPerformance);
 router.get('/stats', getPerformanceStats);
 router.get('/top-performers', getTopPerformers);
 router.get('/period/:year/:month', getPerformanceByPeriod);

@@ -1,0 +1,24 @@
+/* Login Layout */
+.login-layout {
+  min-height: 100vh;
+}
+
+/* Dashboard Layout */
+.dashboard-layout {
+  min-height: 100vh;
+}
+
+.main-content {
+  margin-left: 16rem; /* ml-64 */
+  margin-top: 4rem; /* mt-16 */
+  padding: 1.5rem; /* p-6 */
+  min-height: 100vh;
+  background-color: #f9fafb; /* bg-gray-50 */
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+  }
+}

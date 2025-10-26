@@ -1,0 +1,16 @@
+/* Active state for navigation links */
+.active {
+  background-color: #f97316; /* bg-orange-500 */
+  color: white;
+}
+
+.active:hover {
+  background-color: #ea580c; /* bg-orange-600 */
+}
+
+/* Responsive sidebar */
+@media (max-width: 768px) {
+  .aws-sidebar {
+    width: 14rem; /* w-56 */
+  }
+}

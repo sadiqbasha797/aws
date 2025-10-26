@@ -1,0 +1,8 @@
+/* Navbar styles are now handled by Tailwind CSS */
+
+/* Mobile responsive adjustments */
+@media (max-width: 1024px) {
+  .aws-navbar {
+    left: 0;
+  }
+}
