@@ -1,0 +1,147 @@
+<div class="min-h-screen bg-gray-50">
+  <div class="p-6">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-8">
+      <button 
+        (click)="goBack()"
+        class="mb-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to SOPs</span>
+      </button>
+
+      <div class="flex items-center gap-4 mb-6">
+        <div class="flex items-center justify-center w-16 h-16 bg-red-500 rounded-xl flex-shrink-0">
+          <i class="fas fa-trash text-white text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Recycle Bin</h1>
+          <p class="text-gray-600 mt-1">Restore deleted items within 30 days</p>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="flex items-center space-x-2 bg-white rounded-lg p-2 shadow-sm border border-gray-200">
+        <button
+          (click)="filterByCollection('all')"
+          [class]="selectedCollection === 'all' ? 'bg-orange-500 text-white' : 'bg-transparent text-gray-700 hover:bg-gray-100'"
+          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200">
+          <i class="fas fa-th mr-2"></i>All Items
+        </button>
+        <button
+          (click)="filterByCollection('sops')"
+          [class]="selectedCollection === 'sops' ? 'bg-orange-500 text-white' : 'bg-transparent text-gray-700 hover:bg-gray-100'"
+          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200">
+          <i class="fas fa-file-alt mr-2"></i>SOPs
+        </button>
+        <button
+          (click)="filterByCollection('teambatches')"
+          [class]="selectedCollection === 'teambatches' ? 'bg-orange-500 text-white' : 'bg-transparent text-gray-700 hover:bg-gray-100'"
+          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200">
+          <i class="fas fa-users mr-2"></i>Team Batches
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="max-w-7xl mx-auto">
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div>
+        <p class="text-gray-600 mt-4 text-lg">Loading bin items...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="max-w-7xl mx-auto">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-red-800 mb-2">Error Loading Bin</h3>
+        <p class="text-red-600 mb-6">{{ error }}</p>
+        <button 
+          (click)="loadBinItems()"
+          class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+          Retry
+        </button>
+      </div>
+    </div>
+
+    <!-- Bin Items -->
+    <div *ngIf="!loading && !error" class="max-w-7xl mx-auto">
+      <!-- Items Grid -->
+      <div *ngIf="binItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div *ngFor="let item of binItems" 
+             class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+          <!-- Item Header -->
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div [class]="getCollectionColor(item.collectionName)" 
+                   class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i [class]="getCollectionIcon(item.collectionName)" class="text-white text-xl"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 line-clamp-1">{{ getItemTitle(item) }}</h3>
+                <span class="text-xs text-gray-500 capitalize">{{ item.collectionName.slice(0, -1) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item Description -->
+          <p class="text-sm text-gray-600 mb-4 line-clamp-2">
+            {{ getItemDescription(item) }}
+          </p>
+
+          <!-- Metadata -->
+          <div class="space-y-2 mb-4">
+            <div class="flex items-center text-xs text-gray-600">
+              <i class="fas fa-user mr-2 w-4"></i>
+              <span>{{ item.deletedBy.name }}</span>
+            </div>
+            <div class="flex items-center text-xs text-gray-600">
+              <i class="fas fa-calendar mr-2 w-4"></i>
+              <span>{{ formatDate(item.deletedAt) }}</span>
+            </div>
+          </div>
+
+          <!-- Expiry Warning -->
+          <div [class]="getExpiryWarningClass(item.daysUntilExpiry || 0)"
+               class="border rounded-lg p-3 mb-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-clock"></i>
+                <span class="text-sm font-medium">{{ getDaysRemainingText(item.daysUntilExpiry || 0) }}</span>
+              </div>
+              <span class="text-xs">Auto-deletes after 30 days</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex space-x-2">
+            <button
+              (click)="restoreItem(item)"
+              class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center justify-center space-x-2">
+              <i class="fas fa-undo"></i>
+              <span>Restore</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="binItems.length === 0" class="text-center py-20">
+        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-trash text-gray-400 text-4xl"></i>
+        </div>
+        <h3 class="text-2xl font-semibold text-gray-900 mb-2">Bin is Empty</h3>
+        <p class="text-gray-600 mb-6">
+          {{ selectedCollection === 'all' ? 'No deleted items found' : 'No deleted ' + selectedCollection + ' found' }}
+        </p>
+        <button
+          (click)="goBack()"
+          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+          Go Back to SOPs
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

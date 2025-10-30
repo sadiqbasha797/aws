@@ -1,0 +1,40 @@
+/* Custom styles for SOP update component */
+
+.resize-vertical {
+  resize: vertical;
+}
+
+/* Focus styles for better accessibility */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+/* Disabled button styles */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* File upload hover effects */
+.border-dashed:hover {
+  border-color: #fb923c;
+}
+
+/* Selected files styling */
+.selected-files {
+  max-height: 200px;
+  overflow-y: auto;
+}

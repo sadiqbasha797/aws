@@ -1,0 +1,127 @@
+<div class="sop-create-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas" [ngClass]="isEditMode ? 'fa-edit' : 'fa-user-plus'"></i>
+      {{ isEditMode ? 'Edit Team Member' : 'Add Team Member' }}
+    </h1>
+  </div>
+
+  <form (ngSubmit)="saveMember()" class="sop-form">
+    <!-- Basic Information -->
+    <div class="form-section">
+      <h2>Basic Information</h2>
+      
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input 
+          type="text" 
+          id="name"
+          [(ngModel)]="memberForm.name" 
+          name="name"
+          class="form-control"
+          placeholder="Enter full name"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input 
+          type="email" 
+          id="email"
+          [(ngModel)]="memberForm.email" 
+          name="email"
+          class="form-control"
+          placeholder="Enter email address"
+          required>
+      </div>
+    </div>
+
+    <!-- Work Information -->
+    <div class="form-section">
+      <h2>Work Information</h2>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="department">Department</label>
+          <input 
+            type="text" 
+            id="department"
+            [(ngModel)]="memberForm.department" 
+            name="department"
+            class="form-control"
+            placeholder="e.g., Engineering">
+        </div>
+
+        <div class="form-group">
+          <label for="position">Position</label>
+          <input 
+            type="text" 
+            id="position"
+            [(ngModel)]="memberForm.position" 
+            name="position"
+            class="form-control"
+            placeholder="e.g., Software Engineer">
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="form-section">
+      <h2>Contact Information</h2>
+      
+      <div class="form-group">
+        <label for="phone">Phone</label>
+        <input 
+          type="tel" 
+          id="phone"
+          [(ngModel)]="memberForm.phone" 
+          name="phone"
+          class="form-control"
+          placeholder="Enter phone number">
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="form-section">
+      <h2>Status</h2>
+      
+      <div class="form-group-checkbox">
+        <input 
+          type="checkbox" 
+          id="isActive"
+          [(ngModel)]="memberForm.isActive" 
+          name="isActive"
+          class="form-checkbox">
+        <label for="isActive">Active member (can access system and participate in activities)</label>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="error">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="loading">
+        <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+        <i class="fas fa-save" *ngIf="!loading"></i>
+        {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Member' : 'Add Member') }}
+      </button>
+      
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary"
+        (click)="cancel()"
+        [disabled]="loading">
+        <i class="fas fa-times"></i>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+

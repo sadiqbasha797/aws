@@ -502,6 +502,14 @@ export class Reliability implements OnInit {
     return 'text-red-600';
   }
 
+  getGradeBadgeClass(score: number): string {
+    if (score >= 90) return 'bg-green-100 text-green-800';
+    if (score >= 80) return 'bg-blue-100 text-blue-800';
+    if (score >= 70) return 'bg-yellow-100 text-yellow-800';
+    if (score >= 60) return 'bg-orange-100 text-orange-800';
+    return 'bg-red-100 text-red-800';
+  }
+
   calculateAccuracy(matching: number, total: number): number {
     return total > 0 ? Math.round((matching / total) * 100 * 100) / 100 : 0;
   }
@@ -564,5 +572,31 @@ export class Reliability implements OnInit {
     });
   }
 
+  // Get array of page numbers for pagination
+  getPaginationPages(): number[] {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = 1;
+    let endPage = this.totalPages;
+    
+    // Adjust the range to show maxVisiblePages at a time
+    if (this.totalPages > maxVisiblePages) {
+      const halfMaxVisible = Math.floor(maxVisiblePages / 2);
+      startPage = Math.max(1, this.currentPage - halfMaxVisible);
+      endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+      
+      // Adjust start page if end page reached the limit
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
 
 }

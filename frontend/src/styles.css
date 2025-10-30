@@ -3,6 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 @import "tailwindcss";
+
 /* AWS Brand Colors */
 :root {
   --aws-orange: #FF9900;
@@ -24,7 +25,7 @@
 }
 
 body {
-  font-family: 'Amazon Ember', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'PT Sans', 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--aws-light-gray);
   color: var(--aws-gray);
   margin: 0;

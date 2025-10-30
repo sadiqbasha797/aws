@@ -1,0 +1,9 @@
+/* Custom styles for any remaining non-Tailwind elements */
+.hidden {
+  display: none;
+}
+
+/* Smooth transitions for hover effects */
+.group:hover .group-hover\:text-orange-600 {
+  color: #ea580c;
+}

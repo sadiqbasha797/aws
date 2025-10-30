@@ -19,6 +19,9 @@ app.use('/api/team-members', require('./routes/teamMemberRoutes'));
 app.use('/api/managers', require('./routes/managerRoutes'));
 app.use('/api/reliability', require('./routes/reliabilityRoutes'));
 app.use('/api/productivity', require('./routes/productivityRoutes'));
+app.use('/api/files', require('./routes/fileRoutes'));
+app.use('/api/sops', require('./routes/sopRoutes'));
+app.use('/api/team-batches', require('./routes/teamBatchRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

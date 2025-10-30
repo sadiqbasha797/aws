@@ -127,9 +127,9 @@ const getMyReliabilityData = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = { 
-      daId: req.user.da_id,
-      isActive: true 
+    const filter = {
+      daId: { $regex: new RegExp(`^${req.user.da_id}$`, 'i') },
+      isActive: true
     };
 
     if (req.query.year) {
@@ -504,6 +504,15 @@ const getUserPerformanceHistory = async (req, res) => {
       return res.status(403).json({
         status: 'error',
         message: 'Access denied. You can only view your own performance history.'
+      });
+    }
+
+    // Get the team member to check access permissions
+    const teamMember = await TeamMember.findOne({ da_id: daId });
+    if (!teamMember) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Team member not found'
       });
     }
 

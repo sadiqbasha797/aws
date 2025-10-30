@@ -16,13 +16,17 @@ export class App implements OnInit {
   protected readonly title = signal('frontend');
   currentRoute = '';
   isAuthenticated = false;
-  showLoginLayout = true;
+  showLoginLayout = false; // Default to dashboard layout initially
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {
+    // Check initial route immediately
+    this.currentRoute = this.router.url;
+    this.updateLayoutState();
+    
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
@@ -32,15 +36,17 @@ export class App implements OnInit {
   }
 
   ngOnInit() {
+    // Update layout state again after initialization
     this.updateLayoutState();
   }
 
   private updateLayoutState() {
     this.isAuthenticated = this.authService.isAuthenticated();
-    const isLoginRoute = this.currentRoute === '/login' || this.currentRoute === '' || this.currentRoute.startsWith('/login');
+    const isLoginRoute = this.currentRoute === '/login' || this.currentRoute.startsWith('/login');
 
-    // Show login layout if on login route OR not authenticated
-    this.showLoginLayout = isLoginRoute || !this.isAuthenticated;
+    // Show login layout only if on login route (regardless of auth status)
+    // This ensures login page always shows without sidebar/navbar
+    this.showLoginLayout = isLoginRoute;
 
     console.log('Layout state - route:', this.currentRoute, 'authenticated:', this.isAuthenticated, 'showLogin:', this.showLoginLayout);
   }

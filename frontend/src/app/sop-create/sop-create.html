@@ -1,0 +1,131 @@
+<div class="sop-create-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-plus"></i>
+      Create New SOP
+    </h1>
+  </div>
+
+  <form (ngSubmit)="createSOP()" class="sop-form">
+    <div class="form-section">
+      <h2>Basic Information</h2>
+      
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input 
+          type="text" 
+          id="title"
+          [(ngModel)]="sopData.title" 
+          name="title"
+          class="form-control"
+          placeholder="Enter SOP title"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea 
+          id="description"
+          [(ngModel)]="sopData.description" 
+          name="description"
+          class="form-control"
+          rows="3"
+          placeholder="Enter SOP description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="process">Process</label>
+        <textarea 
+          id="process"
+          [(ngModel)]="sopData.process" 
+          name="process"
+          class="form-control"
+          rows="8"
+          placeholder="Enter detailed process steps"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tags">Tags</label>
+          <input 
+            type="text" 
+            id="tags"
+            [(ngModel)]="sopData.tags" 
+            name="tags"
+            class="form-control"
+            placeholder="Enter tags separated by commas">
+        </div>
+
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select 
+            id="status"
+            [(ngModel)]="sopData.status" 
+            name="status"
+            class="form-control">
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>Documents (Optional)</h2>
+      
+      <div class="file-upload">
+        <input 
+          type="file" 
+          id="documents"
+          multiple 
+          (change)="onFileSelect($event)"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp"
+          class="file-input">
+        
+        <label for="documents" class="file-input-label">
+          <i class="fas fa-cloud-upload-alt"></i>
+          Choose Documents
+        </label>
+        
+        <p class="file-info">
+          Upload initial documents (PDF, Word, Excel, PowerPoint, Text, Images)
+        </p>
+      </div>
+
+      <div class="selected-files" *ngIf="selectedFiles && selectedFiles.length > 0">
+        <h4>Selected Files:</h4>
+        <ul>
+          <li *ngFor="let file of getSelectedFileArray()">
+            <i class="fas fa-file"></i>
+            {{ file.name }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="error-message" *ngIf="error">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="loading">
+        <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+        <i class="fas fa-save" *ngIf="!loading"></i>
+        {{ loading ? 'Creating...' : 'Create SOP' }}
+      </button>
+      
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary"
+        (click)="cancel()"
+        [disabled]="loading">
+        <i class="fas fa-times"></i>
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>

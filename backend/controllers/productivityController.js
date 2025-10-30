@@ -127,9 +127,9 @@ const getMyProductivityData = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = { 
-      associateName: req.user.name,
-      isActive: true 
+    const filter = {
+      associateName: { $regex: new RegExp(`^${req.user.name}$`, 'i') },
+      isActive: true
     };
 
     if (req.query.year) {

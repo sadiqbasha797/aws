@@ -1,11 +1,12 @@
 const TeamMember = require('../models/TeamMember');
 const Manager = require('../models/Manager');
+const { sendVerificationEmail } = require('../utils/email');
 
 // Get all team members
 const getAllTeamMembers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 10000; // High limit to get all records
     const skip = (page - 1) * limit;
 
     // Build filter object
@@ -35,20 +36,17 @@ const getAllTeamMembers = async (req, res) => {
 
     const total = await TeamMember.countDocuments(filter);
 
+    // Return response matching frontend expectations
     res.status(200).json({
-      status: 'success',
-      results: teamMembers.length,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      data: {
-        teamMembers
-      }
+      message: 'Team members fetched successfully',
+      teamMembers: teamMembers,
+      count: total
     });
   } catch (error) {
+    console.error('Error fetching team members:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Something went wrong!'
+      message: 'Failed to fetch team members',
+      error: error.message
     });
   }
 };
@@ -105,64 +103,103 @@ const getMe = async (req, res) => {
 // Create team member
 const createTeamMember = async (req, res) => {
   try {
-    const { name, email, password, phone, managerId, da_id, workerId } = req.body;
+    const { name, email, password, phone, managerId, da_id, workerId, department, position, isActive } = req.body;
 
-    // Check if manager exists
-    const manager = await Manager.findById(managerId);
-    if (!manager) {
+    // Validate required fields
+    if (!name || !email) {
       return res.status(400).json({
-        status: 'error',
-        message: 'Manager not found'
+        message: 'Name and email are required'
       });
+    }
+
+    // Check if manager exists (if managerId provided)
+    if (managerId) {
+      const manager = await Manager.findById(managerId);
+      if (!manager) {
+        return res.status(400).json({
+          message: 'Manager not found'
+        });
+      }
     }
 
     // Check if team member already exists
     const existingTeamMember = await TeamMember.findOne({ email });
     if (existingTeamMember) {
       return res.status(400).json({
-        status: 'error',
         message: 'Team member with this email already exists'
       });
     }
 
+    // Check if workerId already exists (if provided)
+    if (workerId) {
+      const existingTeamMemberWithWorkerId = await TeamMember.findOne({ workerId });
+      if (existingTeamMemberWithWorkerId) {
+        return res.status(400).json({
+          message: 'Team member with this worker ID already exists'
+        });
+      }
+    }
+
+    // Check if da_id already exists (if provided)
+    if (da_id) {
+      const existingTeamMemberWithDaId = await TeamMember.findOne({ da_id });
+      if (existingTeamMemberWithDaId) {
+        return res.status(400).json({
+          message: 'Team member with this DA ID already exists'
+        });
+      }
+    }
+
+    // Generate default password if not provided
+    const defaultPassword = password || 'Password123!';
+
     const teamMember = await TeamMember.create({
       name,
       email,
-      password,
-      phone,
-      da_id,
-      workerId,
-      managerId
+      password: defaultPassword,
+      phone: phone || '',
+      da_id: da_id || '',
+      workerId: workerId || '',
+      department: department || '',
+      position: position || '',
+      managerId: managerId || req.user.id, // Use current user as manager if not provided
+      isActive: isActive !== undefined ? isActive : true
     });
 
     // Create email verification token
     const verificationToken = teamMember.createEmailVerificationToken();
     await teamMember.save({ validateBeforeSave: false });
 
-    // In a real application, you would send this token via email
-    console.log('Email verification token:', verificationToken);
+    // Send verification email to the team member
+    try {
+      await sendVerificationEmail(teamMember, verificationToken);
+    } catch (emailError) {
+      // If email fails, log the error but don't prevent registration
+      console.error('Failed to send verification email:', emailError);
+      // We still continue with the registration process
+    }
 
     res.status(201).json({
-      status: 'success',
       message: 'Team member created successfully',
-      data: {
-        teamMember: {
-          id: teamMember._id,
-          name: teamMember.name,
-          email: teamMember.email,
-          phone: teamMember.phone,
-          da_id: teamMember.da_id,
-          workerId: teamMember.workerId,
-          managerId: teamMember.managerId,
-          isActive: teamMember.isActive,
-          isEmailVerified: teamMember.isEmailVerified,
-          createdAt: teamMember.createdAt
-        }
+      teamMember: {
+        _id: teamMember._id,
+        name: teamMember.name,
+        email: teamMember.email,
+        phone: teamMember.phone,
+        da_id: teamMember.da_id,
+        workerId: teamMember.workerId,
+        managerId: teamMember.managerId,
+        department: teamMember.department,
+        position: teamMember.position,
+        isActive: teamMember.isActive,
+        isEmailVerified: teamMember.isEmailVerified,
+        createdAt: teamMember.createdAt,
+        updatedAt: teamMember.updatedAt
       }
     });
   } catch (error) {
+    console.error('Error creating team member:', error);
     res.status(400).json({
-      status: 'error',
       message: error.message
     });
   }
@@ -171,19 +208,22 @@ const createTeamMember = async (req, res) => {
 // Update team member
 const updateTeamMember = async (req, res) => {
   try {
-    const { name, phone, managerId, da_id, workerId } = req.body;
+    const { name, email, phone, managerId, da_id, workerId, department, position, isActive } = req.body;
     const updateData = {};
 
-    if (name) updateData.name = name;
-    if (phone) updateData.phone = phone;
-    if (da_id) updateData.da_id = da_id;
-    if (workerId) updateData.workerId = workerId;
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (department !== undefined) updateData.department = department;
+    if (position !== undefined) updateData.position = position;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (da_id !== undefined) updateData.da_id = da_id;
+    if (workerId !== undefined) updateData.workerId = workerId;
     if (managerId) {
       // Check if manager exists
       const manager = await Manager.findById(managerId);
       if (!manager) {
         return res.status(400).json({
-          status: 'error',
           message: 'Manager not found'
         });
       }
@@ -203,21 +243,16 @@ const updateTeamMember = async (req, res) => {
 
     if (!teamMember) {
       return res.status(404).json({
-        status: 'error',
         message: 'Team member not found'
       });
     }
 
     res.status(200).json({
-      status: 'success',
       message: 'Team member updated successfully',
-      data: {
-        teamMember
-      }
+      teamMember: teamMember
     });
   } catch (error) {
     res.status(400).json({
-      status: 'error',
       message: error.message
     });
   }
@@ -265,19 +300,17 @@ const deleteTeamMember = async (req, res) => {
 
     if (!teamMember) {
       return res.status(404).json({
-        status: 'error',
         message: 'Team member not found'
       });
     }
 
     res.status(200).json({
-      status: 'success',
       message: 'Team member deleted successfully'
     });
   } catch (error) {
+    console.error('Error deleting team member:', error);
     res.status(500).json({
-      status: 'error',
-      message: 'Something went wrong!'
+      message: 'Failed to delete team member'
     });
   }
 };

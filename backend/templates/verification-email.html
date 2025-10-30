@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #146EB4; /* AWS Blue */
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #f97316; /* AWS Orange */
+            color: white !important;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Our Application!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{name}},</h2>
+            <p>Thank you for registering with our application. To complete your registration and activate your account, please verify your email address by clicking the button below.</p>
+            
+            <p style="text-align: center;">
+                <a href="{{verificationUrl}}" class="button">Verify Your Email</a>
+            </p>
+            
+            <p>Or you can copy and paste this link into your browser:</p>
+            <p><a href="{{verificationUrl}}">{{verificationUrl}}</a></p>
+            
+            <p>This verification link will expire in 24 hours.</p>
+            
+            <p>If you did not create an account with us, please ignore this email.</p>
+            
+            <p>Best regards,<br>The Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 Our Application. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

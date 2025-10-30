@@ -1,0 +1,411 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex flex-col items-center justify-center py-20">
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div>
+    <p class="text-gray-600 mt-4 text-lg">Loading SOP details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="p-6">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-red-800 mb-2">Error Loading SOP</h3>
+        <p class="text-red-600 mb-6">{{ error }}</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <button 
+            (click)="reloadSOP()"
+            class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-redo"></i>
+            <span>Retry</span>
+          </button>
+          <button 
+            (click)="goBack()"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-arrow-left"></i>
+            <span>Go Back</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOP Details -->
+  <div *ngIf="sop && !loading && !error" class="p-6">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <!-- Back Button & Title -->
+        <div class="flex-1">
+          <button 
+            (click)="goBack()"
+            class="mb-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+            <i class="fas fa-arrow-left"></i>
+            <span *ngIf="sop.parentSOPId">Back to Parent SOP</span>
+            <span *ngIf="!sop.parentSOPId">Back to SOPs</span>
+          </button>
+          
+          <!-- Child Version Indicator -->
+          <div *ngIf="sop.parentSOPId" class="mb-4 flex items-center space-x-2 text-sm">
+            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
+              <i class="fas fa-code-branch mr-1"></i>
+              Child Version
+            </span>
+            <span class="text-gray-600">
+              <i class="fas fa-arrow-right mx-2"></i>
+              Click "Back to Parent SOP" to view other versions
+            </span>
+          </div>
+          
+          <div class="flex items-start gap-4">
+            <div class="flex items-center justify-center w-16 h-16 bg-orange-500 rounded-xl flex-shrink-0">
+              <i class="fas fa-file-alt text-white text-2xl"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h1 class="text-3xl font-bold text-gray-900 mb-2 break-words">
+                {{ sop.title || 'Untitled SOP' }}
+              </h1>
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="px-3 py-1 text-sm font-medium rounded-full" 
+                      [ngClass]="getStatusBadgeClass(sop.status)">
+                  {{ sop.status | titlecase }}
+                </span>
+                <span class="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fas fa-code-branch mr-1"></i>
+                  Version {{ sop.versionNumber }}
+                </span>
+                <span *ngIf="sop.isParentVersion" 
+                      class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <i class="fas fa-star mr-1"></i>
+                  Current Version
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center space-x-2">
+          <button 
+            *ngIf="canCreateVersion() && sop.isParentVersion"
+            (click)="uploadNewVersion()"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full font-medium text-sm transition-colors duration-200 flex items-center space-x-2 shadow-sm">
+            <i class="fas fa-cloud-upload-alt text-green-600"></i>
+            <span>Upload New Version</span>
+          </button>
+          <button 
+            *ngIf="canEditSOP()"
+            (click)="editSOP()"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full font-medium text-sm transition-colors duration-200 flex items-center space-x-2 shadow-sm">
+            <i class="fas fa-edit text-blue-600"></i>
+            <span>Edit SOP</span>
+          </button>
+          <button 
+            *ngIf="canDeleteSOP()"
+            (click)="deleteSOP()"
+            class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full font-medium text-sm transition-colors duration-200 flex items-center space-x-2 shadow-sm">
+            <i class="fas fa-trash text-red-600"></i>
+            <span>Delete SOP</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOP Information -->
+    <div class="max-w-7xl mx-auto mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Description -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-info-circle text-blue-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-900">Description</h2>
+            </div>
+            <p class="text-gray-700 leading-relaxed">
+              {{ sop.description || 'No description provided' }}
+            </p>
+          </div>
+
+          <!-- Process -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-list-ol text-green-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-900">Process</h2>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <pre class="whitespace-pre-wrap text-gray-700 font-mono text-sm leading-relaxed">{{ sop.process || 'No process defined' }}</pre>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div *ngIf="sop.tags && sop.tags.length > 0" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-tags text-purple-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-900">Tags</h2>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span *ngFor="let tag of sop.tags" 
+                    class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Created By -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user text-orange-600"></i>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900">Created By</h3>
+            </div>
+            <div class="space-y-2">
+              <p class="font-medium text-gray-900">{{ sop.createdBy.name || 'Unknown' }}</p>
+              <p class="text-sm text-gray-600">{{ sop.createdBy.email }}</p>
+              <p class="text-sm text-gray-500">{{ formatDate(sop.createdAt) }}</p>
+            </div>
+          </div>
+
+          <!-- Last Updated -->
+          <div *ngIf="sop.updatedBy" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-edit text-yellow-600"></i>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900">Last Updated</h3>
+            </div>
+            <div class="space-y-2">
+              <p class="font-medium text-gray-900">{{ sop.updatedBy.name || 'Unknown' }}</p>
+              <p class="text-sm text-gray-600">{{ sop.updatedBy.email }}</p>
+              <p class="text-sm text-gray-500">{{ formatDate(sop.updatedAt) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div class="max-w-7xl mx-auto">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+              <i class="fas fa-paperclip text-indigo-600"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-900">
+              Documents ({{ sop.documents.length || 0 }})
+            </h2>
+          </div>
+          
+          <!-- Toggle Upload Button -->
+          <button 
+            *ngIf="canAddDocuments()"
+            (click)="toggleUploadSection()"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center space-x-2">
+            <i [class]="showUploadSection ? 'fas fa-times' : 'fas fa-plus'"></i>
+            <span>{{ showUploadSection ? 'Close Upload' : 'Upload Documents' }}</span>
+          </button>
+        </div>
+
+        <!-- Document Upload (Toggleable) -->
+        <div *ngIf="canAddDocuments() && showUploadSection" class="mb-8 p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-400 transition-colors duration-200">
+          <div class="text-center">
+            <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-cloud-upload-alt text-orange-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Upload Documents</h3>
+            
+            <input 
+              type="file" 
+              id="documentFiles"
+              multiple 
+              (change)="onFileSelect($event)"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp"
+              class="hidden">
+            
+            <label for="documentFiles" 
+                   class="inline-flex items-center px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg cursor-pointer transition-colors duration-200 space-x-2">
+              <i class="fas fa-plus"></i>
+              <span>Choose Files</span>
+            </label>
+            
+            <p class="text-sm text-gray-500 mt-2">
+              Supported: PDF, Word, Excel, PowerPoint, Text, Images (Max 10MB each, 5 files max)
+            </p>
+          </div>
+
+          <!-- Selected Files Preview -->
+          <div *ngIf="selectedFiles && selectedFiles.length > 0" class="mt-6 bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Selected Files:</h4>
+            <div class="space-y-2">
+              <div *ngFor="let fileName of getSelectedFileNames()" 
+                   class="flex items-center space-x-2 text-sm text-gray-700">
+                <i class="fas fa-file text-gray-400"></i>
+                <span>{{ fileName }}</span>
+              </div>
+            </div>
+            <p class="text-sm text-gray-600 mt-3 font-medium">
+              Total size: {{ formatFileSize(getSelectedFilesSize()) }}
+            </p>
+          </div>
+
+          <!-- Upload Error -->
+          <div *ngIf="uploadError" class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-center space-x-2 text-red-800">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span class="font-medium">{{ uploadError }}</span>
+            </div>
+          </div>
+
+          <!-- Upload Actions -->
+          <div *ngIf="selectedFiles && selectedFiles.length > 0" class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              [disabled]="uploadingDocuments"
+              (click)="uploadDocuments()"
+              class="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+              <i class="fas fa-spinner fa-spin" *ngIf="uploadingDocuments"></i>
+              <i class="fas fa-upload" *ngIf="!uploadingDocuments"></i>
+              <span>{{ uploadingDocuments ? 'Uploading...' : 'Upload Documents' }}</span>
+            </button>
+            <button 
+              [disabled]="uploadingDocuments"
+              (click)="clearFileSelection()"
+              class="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+              <i class="fas fa-times"></i>
+              <span>Cancel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Documents List -->
+        <div *ngIf="sop.documents && sop.documents.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let document of sop.documents" 
+               class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200 group">
+            <div class="flex items-start space-x-3">
+              <div class="flex-shrink-0 w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <i [class]="getFileIcon(document.mimeType)" class="text-lg"></i>
+              </div>
+              
+              <div class="flex-1 min-w-0">
+                <h4 class="font-medium text-gray-900 truncate group-hover:text-orange-600 transition-colors duration-200">
+                  {{ document.originalName }}
+                </h4>
+                <div class="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                  <span>{{ formatFileSize(document.fileSize) }}</span>
+                  <span>•</span>
+                  <span>{{ formatDate(document.uploadedAt) }}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button 
+                  (click)="viewDocument(document)"
+                  class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                  title="View">
+                  <i class="fas fa-eye text-sm"></i>
+                </button>
+                <button 
+                  (click)="downloadDocument(document)"
+                  class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                  title="Download">
+                  <i class="fas fa-download text-sm"></i>
+                </button>
+                <button 
+                  *ngIf="canRemoveDocument(document)"
+                  (click)="removeDocument(document)"
+                  class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                  title="Remove">
+                  <i class="fas fa-trash text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Documents State -->
+        <div *ngIf="!sop.documents || sop.documents.length === 0" class="text-center py-12">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-file-alt text-gray-400 text-2xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">No Documents</h3>
+          <p class="text-gray-600 mb-6">No documents have been uploaded to this SOP yet.</p>
+          <button 
+            *ngIf="canAddDocuments()" 
+            (click)="toggleUploadSection()"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 mx-auto">
+            <i class="fas fa-plus"></i>
+            <span>Upload First Document</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Versions Section (only for parent SOPs) - Below Documents -->
+    <div *ngIf="sop.isParentVersion && versions.length > 0" class="max-w-7xl mx-auto mt-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-code-branch text-purple-600"></i>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-900">Version History ({{ versions.length }})</h2>
+        </div>
+
+        <!-- Versions List -->
+        <div class="space-y-3">
+          <div *ngFor="let version of versions" 
+               class="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors duration-200 cursor-pointer"
+               (click)="viewVersion(version)">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-white font-bold text-sm">V{{ version.versionNumber }}</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">{{ version.title || 'Untitled Version' }}</h3>
+                <div class="flex items-center space-x-3 text-sm text-gray-600 mt-1">
+                  <span><i class="fas fa-user mr-1"></i>{{ version.createdBy.name || 'Unknown' }}</span>
+                  <span>•</span>
+                  <span><i class="fas fa-calendar mr-1"></i>{{ formatVersionDate(version.createdAt) }}</span>
+                  <span>•</span>
+                  <span><i class="fas fa-file mr-1"></i>{{ version.documents.length || 0 }} docs</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="px-3 py-1 text-sm font-medium rounded-full" 
+                    [ngClass]="getStatusBadgeClass(version.status)">
+                {{ version.status | titlecase }}
+              </span>
+              <i class="fas fa-chevron-right text-gray-400"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="loadingVersions" class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+          <p class="text-gray-600 mt-2">Loading versions...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!loadingVersions && versions.length === 0" class="text-center py-8">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-code-branch text-gray-400 text-2xl"></i>
+          </div>
+          <p class="text-gray-600">No additional versions yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

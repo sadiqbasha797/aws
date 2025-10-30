@@ -2,11 +2,12 @@ const crypto = require('crypto');
 const TeamMember = require('../models/TeamMember');
 const Manager = require('../models/Manager');
 const { createSendToken } = require('../utils/jwt');
+const { sendVerificationEmail } = require('../utils/email');
 
 // Register User
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, managerId } = req.body;
+    const { name, email, password, phone, managerId, workerId, da_id } = req.body;
 
     // Check if manager exists
     const manager = await Manager.findById(managerId);
@@ -26,21 +27,39 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // Create team member
-    const teamMember = await TeamMember.create({
+    // Prepare team member data
+    const teamMemberData = {
       name,
       email,
       password,
       phone,
       managerId
-    });
+    };
+
+    // Add workerId if provided
+    if (workerId) {
+      teamMemberData.workerId = workerId;
+    }
+
+    // Add da_id if provided
+    if (da_id) {
+      teamMemberData.da_id = da_id;
+    }
+
+    const teamMember = await TeamMember.create(teamMemberData);
 
     // Create email verification token
     const verificationToken = teamMember.createEmailVerificationToken();
     await teamMember.save({ validateBeforeSave: false });
 
-    // In a real application, you would send this token via email
-    console.log('Email verification token:', verificationToken);
+    // Send verification email to the team member
+    try {
+      await sendVerificationEmail(teamMember, verificationToken);
+    } catch (emailError) {
+      // If email fails, log the error but don't prevent registration
+      console.error('Failed to send verification email:', emailError);
+      // We still continue with the registration process
+    }
 
     createSendToken(teamMember, 201, res, 'Team member registered successfully. Please verify your email.');
   } catch (error) {
@@ -78,8 +97,14 @@ const registerManager = async (req, res) => {
     const verificationToken = manager.createEmailVerificationToken();
     await manager.save({ validateBeforeSave: false });
 
-    // In a real application, you would send this token via email
-    console.log('Email verification token:', verificationToken);
+    // Send verification email to the manager
+    try {
+      await sendVerificationEmail(manager, verificationToken);
+    } catch (emailError) {
+      // If email fails, log the error but don't prevent registration
+      console.error('Failed to send verification email to manager:', emailError);
+      // We still continue with the registration process
+    }
 
     createSendToken(manager, 201, res, 'Manager registered successfully. Please verify your email.');
   } catch (error) {
