@@ -68,64 +68,33 @@
               placeholder="Enter SOP title">
           </div>
 
-          <!-- Description -->
-          <div class="mb-6">
-            <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              [(ngModel)]="formData.description"
-              rows="4"
-              maxlength="1000"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-vertical"
-              placeholder="Provide a brief description of this SOP"></textarea>
-          </div>
-
           <!-- Process -->
           <div class="mb-6">
             <label for="process" class="block text-sm font-semibold text-gray-700 mb-2">
-              Process Details
-            </label>
-            <textarea
-              id="process"
-              name="process"
-              [(ngModel)]="formData.process"
-              rows="6"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 resize-vertical"
-              placeholder="Describe the detailed process or procedure"></textarea>
-          </div>
-
-          <!-- Tags -->
-          <div class="mb-6">
-            <label for="tags" class="block text-sm font-semibold text-gray-700 mb-2">
-              Tags
+              Process
             </label>
             <input
               type="text"
-              id="tags"
-              name="tags"
-              [(ngModel)]="formData.tags"
+              id="process"
+              name="process"
+              [(ngModel)]="formData.process"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
-              placeholder="Enter tags separated by commas (e.g., safety, quality, training)">
-            <p class="text-sm text-gray-500 mt-1">Separate multiple tags with commas</p>
+              placeholder="Enter process name">
           </div>
 
-          <!-- Status -->
+          <!-- SOP URL -->
           <div class="mb-6">
-            <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">
-              Status
+            <label for="sopUrl" class="block text-sm font-semibold text-gray-700 mb-2">
+              SOP URL
             </label>
-            <select
-              id="status"
-              name="status"
-              [(ngModel)]="formData.status"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200">
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
-            </select>
+            <input
+              type="url"
+              id="sopUrl"
+              name="sopUrl"
+              [(ngModel)]="formData.sopUrl"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+              placeholder="https://example.com/sop">
+            <p class="text-sm text-gray-500 mt-1">Enter a URL to the SOP (e.g., external link or cloud storage link)</p>
           </div>
 
           <!-- Error Message -->

@@ -1,4 +1,14 @@
 <div class="min-h-screen bg-gray-50 p-6">
+  <!-- Back Button (only shown when viewing SOPs) -->
+  <div *ngIf="selectedProcess" class="mb-4">
+    <button 
+      (click)="backToProcessList()"
+      class="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors duration-200 flex items-center gap-2">
+      <i class="fas fa-arrow-left"></i>
+      <span>Back to Processes</span>
+    </button>
+  </div>
+
   <!-- Header -->
   <div class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -8,7 +18,15 @@
         </div>
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Standard Operating Procedures</h1>
-          <p class="text-gray-600 mt-1">Manage and access your organization's SOPs</p>
+          <p class="text-gray-600 mt-1" *ngIf="!selectedProcess">Manage and access your organization's SOPs</p>
+          <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 mt-1" *ngIf="selectedProcess">
+            <span class="flex items-center gap-1">
+              <i class="fas fa-folder text-gray-400"></i>
+              {{ selectedProcess }}
+            </span>
+            <span class="text-gray-500">•</span>
+            <span>{{ processSOPs.length }} {{ processSOPs.length === 1 ? 'SOP' : 'SOPs' }}</span>
+          </div>
         </div>
       </div>
       <div class="flex items-center space-x-4">
@@ -29,9 +47,9 @@
     </div>
   </div>
 
-  <!-- Search and Filters -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-    <!-- Search Bar - Always Visible -->
+  <!-- Search and Filters (only shown when viewing SOPs) -->
+  <div *ngIf="selectedProcess" class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+    <!-- Search Bar -->
     <div class="p-6 pb-4">
       <div class="flex items-center justify-between mb-4">
         <div class="relative flex-1 max-w-md">
@@ -42,7 +60,7 @@
             type="text" 
             [(ngModel)]="searchTerm" 
             (keyup.enter)="onSearch()"
-            placeholder="Search SOPs by title, description, or tags..."
+            placeholder="Search SOPs by title or process..."
             class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200">
           <button 
             (click)="onSearch()"
@@ -67,20 +85,6 @@
     <div *ngIf="showFilters" class="px-6 pb-6 border-t border-gray-100 pt-4">
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center space-x-2">
-          <label for="statusFilter" class="text-sm font-medium text-gray-700">Status:</label>
-          <select 
-            id="statusFilter"
-            [(ngModel)]="statusFilter" 
-            (change)="onFilterChange()"
-            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
-
-        <div class="flex items-center space-x-2">
           <label for="sortBy" class="text-sm font-medium text-gray-700">Sort by:</label>
           <select 
             id="sortBy"
@@ -90,7 +94,6 @@
             <option value="createdAt">Created Date</option>
             <option value="updatedAt">Updated Date</option>
             <option value="title">Title</option>
-            <option value="status">Status</option>
           </select>
         </div>
 
@@ -139,21 +142,79 @@
     </div>
   </div>
 
-  <!-- SOPs List -->
-  <div *ngIf="!loading && !error">
+  <!-- Process List View -->
+  <div *ngIf="!loading && !error && !selectedProcess">
     <!-- Results Info -->
-    <div *ngIf="sops.length > 0" class="mb-4">
+    <div *ngIf="processes.length > 0" class="mb-4">
       <p class="text-sm text-gray-600">
-        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - 
-        {{ getMaxDisplayItems() }} 
-        of {{ totalItems }} SOPs
+        {{ processes.length }} {{ processes.length === 1 ? 'Process' : 'Processes' }} available
       </p>
     </div>
 
-    <!-- SOPs Grid -->
-    <div *ngIf="sops.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Processes Grid -->
+    <div *ngIf="processes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       <div 
-        *ngFor="let sop of sops" 
+        *ngFor="let process of processes" 
+        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group"
+        (click)="selectProcess(process.processName)">
+        
+        <!-- Card Header -->
+        <div class="p-6 pb-4">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center space-x-3">
+              <div class="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg flex-shrink-0">
+                <i class="fas fa-folder text-orange-600 text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200">
+                  {{ process.processName }}
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">
+                  {{ process.count }} {{ process.count === 1 ? 'SOP' : 'SOPs' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100">
+          <button class="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1 group-hover:text-orange-700">
+            <i class="fas fa-eye"></i>
+            <span>View SOPs</span>
+            <i class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform duration-200"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State for Processes -->
+    <div *ngIf="processes.length === 0" class="text-center py-12">
+      <div class="max-w-md mx-auto">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-clipboard-list text-gray-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Processes Found</h3>
+        <p class="text-gray-600 mb-6">
+          No processes have been created yet. Create your first SOP to get started.
+        </p>
+        <button 
+          *ngIf="canCreateSOP()" 
+          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 mx-auto"
+          (click)="createSOP()">
+          <i class="fas fa-plus"></i>
+          <span>Create First SOP</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOPs List View (when process is selected) -->
+  <div *ngIf="!loading && !error && selectedProcess">
+    <!-- SOPs Grid -->
+    <div *ngIf="processSOPs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div 
+        *ngFor="let sop of processSOPs" 
         class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group"
         (click)="viewSOP(sop)">
         
@@ -163,15 +224,7 @@
             <h3 class="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 line-clamp-2">
               {{ sop.title || 'Untitled SOP' }}
             </h3>
-            <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full flex-shrink-0" 
-                  [ngClass]="getStatusBadgeClass(sop.status)">
-              {{ sop.status | titlecase }}
-            </span>
           </div>
-
-          <p class="text-gray-600 text-sm line-clamp-2 mb-4">
-            {{ sop.description || 'No description available' }}
-          </p>
 
           <!-- Meta Information -->
           <div class="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-4">
@@ -187,23 +240,6 @@
               <i class="fas fa-paperclip w-3"></i>
               <span>{{ sop.documents.length || 0 }} docs</span>
             </div>
-            <div class="flex items-center space-x-1" *ngIf="sop.version">
-              <i class="fas fa-code-branch w-3"></i>
-              <span>v{{ sop.version }}</span>
-            </div>
-          </div>
-
-          <!-- Tags -->
-          <div *ngIf="sop.tags && sop.tags.length > 0" class="flex flex-wrap gap-1 mb-4">
-            <span 
-              *ngFor="let tag of sop.tags.slice(0, 3)" 
-              class="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs">
-              {{ tag }}
-            </span>
-            <span *ngIf="sop.tags.length > 3" 
-                  class="bg-orange-100 text-orange-700 px-2 py-1 rounded-md text-xs">
-              +{{ sop.tags.length - 3 }} more
-            </span>
           </div>
         </div>
 
@@ -218,31 +254,22 @@
       </div>
     </div>
 
-    <!-- Empty State -->
-    <div *ngIf="sops.length === 0" class="text-center py-12">
+    <!-- Empty State for SOPs in selected process -->
+    <div *ngIf="processSOPs.length === 0" class="text-center py-12">
       <div class="max-w-md mx-auto">
         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <i class="fas fa-clipboard-list text-gray-400 text-2xl"></i>
         </div>
         <h3 class="text-lg font-semibold text-gray-900 mb-2">No SOPs Found</h3>
-        <p class="text-gray-600 mb-6" *ngIf="searchTerm || statusFilter">
-          No SOPs match your current filters. Try adjusting your search criteria.
+        <p class="text-gray-600 mb-6">
+          No SOPs found in the "{{ selectedProcess }}" process.
         </p>
-        <p class="text-gray-600 mb-6" *ngIf="!searchTerm && !statusFilter">
-          No SOPs have been created yet. Create your first SOP to get started.
-        </p>
-        <button 
-          *ngIf="canCreateSOP() && !searchTerm && !statusFilter" 
-          class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 mx-auto"
-          (click)="createSOP()">
-          <i class="fas fa-plus"></i>
-          <span>Create First SOP</span>
-        </button>
       </div>
     </div>
+  </div>
 
-    <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+  <!-- Pagination (only show when not in process view) -->
+  <div *ngIf="!selectedProcess && totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
       <div class="text-sm text-gray-600">
         Page {{ currentPage }} of {{ totalPages }}
       </div>
@@ -276,6 +303,5 @@
           <i class="fas fa-chevron-right ml-1"></i>
         </button>
       </nav>
-    </div>
   </div>
 </div>

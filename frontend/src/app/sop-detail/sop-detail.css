@@ -1,9 +1,23 @@
-/* Custom styles for any remaining non-Tailwind elements */
-.hidden {
-  display: none;
-}
-
 /* Smooth transitions for hover effects */
 .group:hover .group-hover\:text-orange-600 {
   color: #ea580c;
+}
+
+/* Custom scrollbar for documents if needed */
+.space-y-2::-webkit-scrollbar {
+  width: 6px;
+}
+
+.space-y-2::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.space-y-2::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.space-y-2::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

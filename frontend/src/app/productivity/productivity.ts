@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ProductivityService, ProductivityData, ProductivityStats } from '../services/productivity.service';
 import { AuthService } from '../services/auth.service';
 import { TeamMemberService } from '../services/team-member.service';
@@ -43,10 +44,7 @@ export class Productivity implements OnInit {
     { value: 'December', label: 'December' }
   ];
   
-  weekOptions = Array.from({ length: 53 }, (_, i) => ({ 
-    value: `Week ${i + 1}`, 
-    label: `Week ${i + 1}` 
-  }));
+  weekOptions: number[] = Array.from({ length: 53 }, (_, i) => i + 1);
   
   yearOptions: number[] = [];
   
@@ -63,7 +61,7 @@ export class Productivity implements OnInit {
   errorMessage = '';
   successMessage = '';
   activeTab = 'overview';
-  showAggregatedView = true;
+  showAggregatedView = false;
   selectedTeamMember: any = null;
   teamMemberDetails: ProductivityData[] = [];
   teamMemberStats: any = null;
@@ -75,16 +73,42 @@ export class Productivity implements OnInit {
   totalRecords = 0;
   pageSize = 10;
   
-  // Filters
+  // Filters (default to current month)
   filters = {
     year: new Date().getFullYear(),
-    month: undefined as string | undefined,
-    week: undefined as string | undefined,
+    month: this.getCurrentMonth() as string | undefined,
+    week: undefined as number | undefined,
     search: '',
     minProductivity: undefined as number | undefined,
     maxProductivity: undefined as number | undefined,
     performanceCategory: undefined as string | undefined
   };
+  
+  // Column filters
+  columnFilters = {
+    selectedAssociates: [] as string[],
+    dateFrom: undefined as string | undefined,
+    dateTo: undefined as string | undefined
+  };
+  
+  // Filter dropdown visibility
+  showAssociateFilter = false;
+  showDateFilter = false;
+  
+  // Search terms for filter dropdowns
+  associateSearchTerm = '';
+  
+  // Dropdown positions
+  associateFilterPosition = { top: 0, left: 0 };
+  dateFilterPosition = { top: 0, left: 0 };
+  
+  // Calculation menu
+  showCalculationMenu = false;
+  calculationResults: any = null;
+  selectedCalculationType: string = '';
+  
+  // All available data for filtering (before column filters)
+  allProductivityData: ProductivityData[] = [];
   
   // Form for creating/editing productivity data
   productivityForm: Partial<ProductivityData> = {
@@ -104,7 +128,8 @@ export class Productivity implements OnInit {
   constructor(
     private productivityService: ProductivityService,
     private authService: AuthService,
-    private teamMemberService: TeamMemberService
+    private teamMemberService: TeamMemberService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -163,7 +188,6 @@ export class Productivity implements OnInit {
     // Only add defined filter values
     if (this.filters.year) filterParams.year = this.filters.year;
     if (this.filters.month) filterParams.month = this.filters.month;
-    if (this.filters.week) filterParams.week = this.filters.week;
     if (this.filters.search) filterParams.search = this.filters.search;
     if (this.filters.minProductivity !== undefined) filterParams.minProductivity = this.filters.minProductivity;
     if (this.filters.maxProductivity !== undefined) filterParams.maxProductivity = this.filters.maxProductivity;
@@ -178,7 +202,14 @@ export class Productivity implements OnInit {
     dataObservable.subscribe({
       next: (allData) => {
         if (allData?.status === 'success' && allData.data?.productivityData) {
-          this.productivityData = allData.data.productivityData;
+          let records = allData.data.productivityData as ProductivityData[];
+          if (this.filters.week !== undefined) {
+            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+          }
+          // Store all records before column filtering
+          this.allProductivityData = records;
+          // Apply column filters
+          this.applyColumnFilters();
           this.totalRecords = allData.total || 0;
           this.totalPages = allData.pages || 1;
         }
@@ -230,11 +261,18 @@ export class Productivity implements OnInit {
       this.pageSize,
       this.filters.year,
       this.filters.month,
-      this.filters.week
+      undefined
     ).subscribe({
       next: (response) => {
         if (response.status === 'success' && response.data?.productivityData) {
-          this.productivityData = response.data.productivityData;
+          let records = response.data.productivityData as ProductivityData[];
+          if (this.filters.week !== undefined) {
+            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+          }
+          // Store all records before column filtering
+          this.allProductivityData = records;
+          // Apply column filters
+          this.applyColumnFilters();
           this.totalRecords = response.total || 0;
           this.totalPages = response.pages || 1;
         }
@@ -388,7 +426,7 @@ export class Productivity implements OnInit {
   clearFilters() {
     this.filters = {
       year: new Date().getFullYear(),
-      month: undefined,
+      month: this.getCurrentMonth(),
       week: undefined,
       search: '',
       minProductivity: undefined,
@@ -398,28 +436,25 @@ export class Productivity implements OnInit {
     this.applyFilters();
   }
 
+  // Show all (clear month and week)
+  showAll() {
+    this.filters.month = undefined;
+    this.filters.week = undefined;
+    this.currentPage = 1;
+    this.loadInitialData();
+  }
+
+  // Current month view
+  showCurrentMonth() {
+    this.filters.month = this.getCurrentMonth();
+    this.filters.week = undefined;
+    this.currentPage = 1;
+    this.loadInitialData();
+  }
+
   // CRUD operations (Manager only)
   showCreateForm() {
-    if (this.showForm) {
-      return; // Prevent multiple calls
-    }
-    
-    this.isEditMode = false;
-    this.editingId = '';
-    this.productivityForm = {
-      associateName: '',
-      month: this.getCurrentMonth(),
-      week: `Week ${this.getCurrentWeek()}`,
-      productivityPercentage: 0,
-      year: new Date().getFullYear(),
-      notes: ''
-    };
-    this.showForm = true;
-    
-    // Load team members if not already loaded
-    if (this.availableTeamMembers.length === 0 && !this.isLoadingTeamMembers) {
-      this.loadTeamMembers();
-    }
+    this.router.navigate(['/productivity/create']);
   }
 
   // Retry loading team members
@@ -599,6 +634,17 @@ export class Productivity implements OnInit {
     return Math.ceil((((now.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
   }
 
+  // ISO week number from date
+  getWeekNumber(date: string | Date): number {
+    const d = new Date(date);
+    const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    return Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
+
   // Get current month name
   getCurrentMonth(): string {
     return new Date().toLocaleString('default', { month: 'long' });
@@ -667,5 +713,321 @@ export class Productivity implements OnInit {
         });
       }
     });
+  }
+
+  // Column filter methods
+  getUniqueAssociates(): string[] {
+    const uniqueAssociates = [...new Set(this.allProductivityData.map(r => r.associateName).filter(name => name))];
+    return uniqueAssociates.sort();
+  }
+
+  getFilteredAssociates(): string[] {
+    if (!this.associateSearchTerm) {
+      return this.getUniqueAssociates();
+    }
+    const searchLower = this.associateSearchTerm.toLowerCase();
+    return this.getUniqueAssociates().filter(name => name && name.toLowerCase().includes(searchLower));
+  }
+
+  toggleAssociateFilter(associate: string) {
+    const index = this.columnFilters.selectedAssociates.indexOf(associate);
+    if (index > -1) {
+      this.columnFilters.selectedAssociates.splice(index, 1);
+    } else {
+      this.columnFilters.selectedAssociates.push(associate);
+    }
+    this.applyColumnFilters();
+  }
+
+  isAssociateSelected(associate: string): boolean {
+    return this.columnFilters.selectedAssociates.includes(associate);
+  }
+
+  clearAssociateFilter() {
+    this.columnFilters.selectedAssociates = [];
+    this.applyColumnFilters();
+  }
+
+  applyDateFilter() {
+    this.showDateFilter = false;
+    this.applyColumnFilters();
+  }
+
+  clearDateFilter() {
+    this.columnFilters.dateFrom = undefined;
+    this.columnFilters.dateTo = undefined;
+    this.applyColumnFilters();
+  }
+
+  applyColumnFilters() {
+    let filtered = [...this.allProductivityData];
+
+    // Filter by Associate
+    if (this.columnFilters.selectedAssociates.length > 0) {
+      filtered = filtered.filter(r => this.columnFilters.selectedAssociates.includes(r.associateName));
+    }
+
+    // Filter by Date Range
+    if (this.columnFilters.dateFrom) {
+      const fromDate = new Date(this.columnFilters.dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate >= fromDate;
+      });
+    }
+
+    if (this.columnFilters.dateTo) {
+      const toDate = new Date(this.columnFilters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate <= toDate;
+      });
+    }
+
+    this.productivityData = filtered;
+  }
+
+  hasActiveFilters(): boolean {
+    return this.columnFilters.selectedAssociates.length > 0 ||
+           !!this.columnFilters.dateFrom ||
+           !!this.columnFilters.dateTo;
+  }
+
+  clearAllColumnFilters() {
+    this.columnFilters = {
+      selectedAssociates: [],
+      dateFrom: undefined,
+      dateTo: undefined
+    };
+    this.applyColumnFilters();
+  }
+
+  // Close all filter dropdowns
+  closeAllFilters() {
+    this.showAssociateFilter = false;
+    this.showDateFilter = false;
+  }
+
+  // Calculate dropdown position based on button position
+  calculateDropdownPosition(event: MouseEvent, filterType: 'associate' | 'date') {
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // Get dropdown width estimates
+    const dropdownWidth = filterType === 'date' ? 280 : 200;
+    const dropdownHeight = filterType === 'date' ? 180 : 300; // Estimate
+    
+    // Get header row for positioning
+    const headerRow = button.closest('th');
+    const headerRect = headerRow ? headerRow.getBoundingClientRect() : null;
+    
+    let left: number;
+    let top: number;
+    
+    if (filterType === 'date') {
+      // For date popup, align to the right edge of the button (popup opens to the left)
+      left = rect.right + scrollLeft - dropdownWidth;
+      top = headerRect ? headerRect.bottom + scrollTop + 5 : rect.bottom + scrollTop + 5;
+      
+      // If popup would go off screen to the left, align with button's left edge
+      if (left < scrollLeft + 10) {
+        left = rect.left + scrollLeft;
+      }
+    } else {
+      // For associate filter, try right side first
+      left = rect.right + scrollLeft + 10;
+      top = headerRect ? headerRect.bottom + scrollTop + 5 : rect.bottom + scrollTop + 5;
+      
+      // If no space to the right, position to the left
+      if (left + dropdownWidth > window.innerWidth + scrollLeft - 20) {
+        left = rect.left + scrollLeft - dropdownWidth - 10;
+        // If still off screen, align with button
+        if (left < scrollLeft + 10) {
+          left = rect.left + scrollLeft;
+        }
+      }
+    }
+    
+    // Ensure dropdown doesn't go below viewport
+    if (top + dropdownHeight > window.innerHeight + scrollTop - 20) {
+      top = window.innerHeight + scrollTop - dropdownHeight - 20;
+    }
+    
+    // Ensure dropdown doesn't go above viewport
+    if (top < scrollTop + 10) {
+      top = scrollTop + 10;
+    }
+    
+    // Ensure dropdown doesn't go off screen horizontally
+    if (left + dropdownWidth > window.innerWidth + scrollLeft - 10) {
+      left = window.innerWidth + scrollLeft - dropdownWidth - 10;
+    }
+    if (left < scrollLeft + 10) {
+      left = scrollLeft + 10;
+    }
+    
+    const position = {
+      top: top,
+      left: left
+    };
+    
+    if (filterType === 'associate') {
+      this.associateFilterPosition = position;
+    } else {
+      this.dateFilterPosition = position;
+    }
+  }
+
+  toggleAssociateFilterMenu(event: MouseEvent) {
+    this.calculateDropdownPosition(event, 'associate');
+    this.showAssociateFilter = !this.showAssociateFilter;
+    this.showDateFilter = false;
+  }
+
+  toggleDateFilterMenu(event: MouseEvent) {
+    this.calculateDropdownPosition(event, 'date');
+    this.showDateFilter = !this.showDateFilter;
+    this.showAssociateFilter = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // Close filters if clicking outside filter elements
+    if (!target.closest('.filter-dropdown') && !target.closest('.filter-button')) {
+      this.closeAllFilters();
+    }
+    // Close calculation menu if clicking outside
+    if (!target.closest('.calculation-menu') && !target.closest('.calculation-button')) {
+      this.showCalculationMenu = false;
+    }
+  }
+
+  // Calculation methods
+  toggleCalculationMenu() {
+    this.showCalculationMenu = !this.showCalculationMenu;
+  }
+
+  calculateStatistics(type: string) {
+    if (this.productivityData.length === 0) {
+      this.calculationResults = {
+        error: 'No data available for calculation'
+      };
+      return;
+    }
+
+    this.selectedCalculationType = type;
+    let result: any = { type };
+
+    switch (type) {
+      case 'average':
+        result = this.calculateAverage();
+        break;
+      case 'min':
+        result = this.calculateMin();
+        break;
+      case 'max':
+        result = this.calculateMax();
+        break;
+      case 'sum':
+        result = this.calculateSum();
+        break;
+      case 'count':
+        result = this.calculateCount();
+        break;
+      case 'median':
+        result = this.calculateMedian();
+        break;
+      default:
+        result = { error: 'Unknown calculation type' };
+    }
+
+    this.calculationResults = result;
+    this.showCalculationMenu = false;
+  }
+
+  calculateAverage() {
+    const percentages = this.productivityData.map(r => r.productivityPercentage);
+    
+    return {
+      type: 'Average',
+      productivityPercentage: percentages.reduce((a, b) => a + b, 0) / percentages.length,
+      recordCount: this.productivityData.length
+    };
+  }
+
+  calculateMin() {
+    const percentages = this.productivityData.map(r => r.productivityPercentage);
+    const minPercentage = Math.min(...percentages);
+    const minRecord = this.productivityData.find(r => r.productivityPercentage === minPercentage);
+    
+    return {
+      type: 'Minimum',
+      productivityPercentage: minPercentage,
+      record: minRecord,
+      recordCount: this.productivityData.length
+    };
+  }
+
+  calculateMax() {
+    const percentages = this.productivityData.map(r => r.productivityPercentage);
+    const maxPercentage = Math.max(...percentages);
+    const maxRecord = this.productivityData.find(r => r.productivityPercentage === maxPercentage);
+    
+    return {
+      type: 'Maximum',
+      productivityPercentage: maxPercentage,
+      record: maxRecord,
+      recordCount: this.productivityData.length
+    };
+  }
+
+  calculateSum() {
+    const percentages = this.productivityData.map(r => r.productivityPercentage);
+    
+    return {
+      type: 'Sum',
+      totalProductivity: percentages.reduce((a, b) => a + b, 0),
+      recordCount: this.productivityData.length
+    };
+  }
+
+  calculateCount() {
+    const uniqueAssociates = new Set(this.productivityData.map(r => r.associateName)).size;
+    const uniqueWeeks = new Set(this.productivityData.map(r => r.week)).size;
+    const uniqueMonths = new Set(this.productivityData.map(r => r.month)).size;
+    
+    return {
+      type: 'Count',
+      totalRecords: this.productivityData.length,
+      uniqueAssociates: uniqueAssociates,
+      uniqueWeeks: uniqueWeeks,
+      uniqueMonths: uniqueMonths
+    };
+  }
+
+  calculateMedian() {
+    const percentages = [...this.productivityData.map(r => r.productivityPercentage)].sort((a, b) => a - b);
+    const mid = Math.floor(percentages.length / 2);
+    const median = percentages.length % 2 !== 0 
+      ? percentages[mid] 
+      : (percentages[mid - 1] + percentages[mid]) / 2;
+    
+    return {
+      type: 'Median',
+      productivityPercentage: median,
+      recordCount: this.productivityData.length
+    };
+  }
+
+  closeCalculationResults() {
+    this.calculationResults = null;
+    this.selectedCalculationType = '';
   }
 }

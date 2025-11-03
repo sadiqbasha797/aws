@@ -25,7 +25,6 @@ export class SOPListComponent implements OnInit {
   
   // Filters
   searchTerm = '';
-  statusFilter = '';
   sortBy = 'createdAt';
   sortOrder = 'desc';
   
@@ -34,6 +33,24 @@ export class SOPListComponent implements OnInit {
   
   // UI state
   showFilters = false;
+  selectedProcess: string | null = null;
+  
+  // Process grouping
+  processes: { processName: string; count: number }[] = [];
+  processGroupsMap: Map<string, SOP[]> = new Map();
+  
+  // Get processes as array for template
+  get processesArray(): { processName: string; count: number }[] {
+    return this.processes;
+  }
+  
+  // Get SOPs for selected process
+  get processSOPs(): SOP[] {
+    if (!this.selectedProcess) {
+      return [];
+    }
+    return this.processGroupsMap.get(this.selectedProcess) || [];
+  }
 
   constructor(
     private sopService: SOPService,
@@ -67,11 +84,13 @@ export class SOPListComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
+    // For process view (initial load), fetch more SOPs to see all processes
+    const limit = this.selectedProcess ? this.itemsPerPage : 1000;
+
     const params = {
-      page: this.currentPage,
-      limit: this.itemsPerPage,
+      page: this.selectedProcess ? this.currentPage : 1,
+      limit: limit,
       search: this.searchTerm || undefined,
-      status: this.statusFilter || undefined,
       sortBy: this.sortBy,
       sortOrder: this.sortOrder
     };
@@ -85,6 +104,10 @@ export class SOPListComponent implements OnInit {
           this.totalItems = response.pagination.totalItems;
           this.itemsPerPage = response.pagination.itemsPerPage;
         }
+        
+        // Group SOPs by process
+        this.groupSOPsByProcess();
+        
         this.loading = false;
       },
       error: (error) => {
@@ -97,11 +120,13 @@ export class SOPListComponent implements OnInit {
 
   onSearch(): void {
     this.currentPage = 1;
+    this.selectedProcess = null; // Reset to process view when searching
     this.loadSOPs();
   }
 
   onFilterChange(): void {
     this.currentPage = 1;
+    this.selectedProcess = null; // Reset to process view when filtering
     this.loadSOPs();
   }
 
@@ -118,19 +143,6 @@ export class SOPListComponent implements OnInit {
 
   viewSOP(sop: SOP): void {
     this.router.navigate(['/sops', sop._id]);
-  }
-
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
   }
 
   formatDate(dateString: string): string {
@@ -165,10 +177,10 @@ export class SOPListComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.statusFilter = '';
     this.sortBy = 'createdAt';
     this.sortOrder = 'desc';
     this.currentPage = 1;
+    this.selectedProcess = null; // Reset to process view
     this.loadSOPs();
   }
 
@@ -178,5 +190,34 @@ export class SOPListComponent implements OnInit {
 
   toggleFilters(): void {
     this.showFilters = !this.showFilters;
+  }
+
+  groupSOPsByProcess(): void {
+    this.processGroupsMap.clear();
+    
+    // Group SOPs by process name
+    this.sops.forEach(sop => {
+      const processName = sop.process || 'Uncategorized';
+      if (!this.processGroupsMap.has(processName)) {
+        this.processGroupsMap.set(processName, []);
+      }
+      this.processGroupsMap.get(processName)!.push(sop);
+    });
+    
+    // Create processes array with counts
+    this.processes = Array.from(this.processGroupsMap.entries()).map(([processName, sops]) => ({
+      processName,
+      count: sops.length
+    })).sort((a, b) => a.processName.localeCompare(b.processName));
+  }
+
+  selectProcess(processName: string): void {
+    this.selectedProcess = processName;
+    this.currentPage = 1;
+  }
+
+  backToProcessList(): void {
+    this.selectedProcess = null;
+    this.currentPage = 1;
   }
 }

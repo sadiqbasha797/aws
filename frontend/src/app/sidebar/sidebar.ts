@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { SidebarService } from '../services/sidebar.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,9 +11,18 @@ import { CommonModule } from '@angular/common';
 })
 export class Sidebar implements OnInit {
   userRole = '';
+  isOpen = false;
+
+  constructor(private sidebarService: SidebarService) {
+    // React to sidebar state changes
+    effect(() => {
+      this.isOpen = this.sidebarService.isOpen();
+    });
+  }
 
   ngOnInit(): void {
     this.getUserRole();
+    this.isOpen = this.sidebarService.isOpen();
   }
 
   getUserRole(): void {
@@ -30,5 +40,12 @@ export class Sidebar implements OnInit {
 
   isManager(): boolean {
     return this.userRole === 'manager';
+  }
+
+  closeSidebar() {
+    // Only close sidebar on mobile screens
+    if (window.innerWidth < 1024) {
+      this.sidebarService.close();
+    }
   }
 }

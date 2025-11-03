@@ -14,8 +14,16 @@ export const routes: Routes = [
     loadComponent: () => import('./reliability/reliability').then(m => m.Reliability)
   },
   {
+    path: 'reliability/create',
+    loadComponent: () => import('./reliability-create/reliability-create').then(m => m.ReliabilityCreateComponent)
+  },
+  {
     path: 'productivity',
     loadComponent: () => import('./productivity/productivity').then(m => m.Productivity)
+  },
+  {
+    path: 'productivity/create',
+    loadComponent: () => import('./productivity-create/productivity-create').then(m => m.ProductivityCreateComponent)
   },
   {
     path: 'sops',
@@ -36,14 +44,6 @@ export const routes: Routes = [
   {
     path: 'team-members/:id/edit',
     loadComponent: () => import('./team-member-form/team-member-form').then(m => m.TeamMemberFormComponent)
-  },
-  {
-    path: 'batches/create',
-    loadComponent: () => import('./batch-form/batch-form').then(m => m.BatchFormComponent)
-  },
-  {
-    path: 'batches/:id/edit',
-    loadComponent: () => import('./batch-form/batch-form').then(m => m.BatchFormComponent)
   },
   {
     path: 'sops/create',

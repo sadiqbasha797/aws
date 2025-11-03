@@ -10,9 +10,6 @@ const {
   removeDocument,
   getMySOPs,
   getActiveSOPs,
-  // Versioning methods
-  createSOPVersion,
-  getSOPVersions,
   softDeleteSOP,
   // Bin methods
   getBinItems,
@@ -85,13 +82,6 @@ router.post('/:id/documents', upload.array('documents', 5), addDocuments);
 
 // DELETE /api/sops/:id/documents/:documentId - Remove specific document from SOP
 router.delete('/:id/documents/:documentId', removeDocument);
-
-// Versioning routes
-// POST /api/sops/:id/versions - Create new version of SOP
-router.post('/:id/versions', upload.array('documents', 5), createSOPVersion);
-
-// GET /api/sops/:id/versions - Get all versions of SOP
-router.get('/:id/versions', getSOPVersions);
 
 // DELETE /api/sops/:id/soft - Soft delete SOP (move to bin)
 router.delete('/:id/soft', softDeleteSOP);

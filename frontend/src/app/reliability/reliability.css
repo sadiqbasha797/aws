@@ -53,6 +53,20 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+/* Filter dropdown positioning */
+.filter-dropdown {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Ensure table container doesn't clip dropdowns */
+.table-container {
+  position: relative;
+  overflow: visible;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .grid-responsive {

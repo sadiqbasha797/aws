@@ -257,3 +257,17 @@
   font-size: 0.875rem;
   color: #6b7280;
 }
+
+/* Filter dropdown positioning */
+.filter-dropdown {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Ensure table container doesn't clip dropdowns */
+.table-container {
+  position: relative;
+  overflow: visible;
+}

@@ -22,10 +22,8 @@ export class SOPUpdateComponent implements OnInit {
   // Form data
   formData: SOPCreateRequest = {
     title: '',
-    description: '',
     process: '',
-    tags: '',
-    status: 'draft'
+    sopUrl: ''
   };
 
   // File upload
@@ -79,10 +77,8 @@ export class SOPUpdateComponent implements OnInit {
         // Keep form empty for fresh upload (don't pre-populate)
         this.formData = {
           title: '',
-          description: '',
           process: '',
-          tags: '',
-          status: 'draft'
+          sopUrl: ''
         };
         
         this.loading = false;
@@ -160,10 +156,8 @@ export class SOPUpdateComponent implements OnInit {
     // Prepare data for new version
     const versionData: SOPCreateRequest = {
       title: this.formData.title.trim(),
-      description: this.formData.description?.trim() || '',
       process: this.formData.process?.trim() || '',
-      tags: this.formData.tags?.trim() || '',
-      status: this.formData.status
+      sopUrl: this.formData.sopUrl?.trim() || undefined
     };
 
     this.sopService.createSOPVersion(this.sop._id, versionData, this.selectedFiles || undefined).subscribe({

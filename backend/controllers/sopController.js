@@ -7,16 +7,14 @@ const { uploadFile, deleteFile } = require('../utils/s3');
  */
 const createSOP = async (req, res) => {
   try {
-    const { title, description, process, tags, status } = req.body;
+    const { title, process, sopUrl } = req.body;
     const user = req.user;
 
     // Create SOP data
     const sopData = {
       title,
-      description,
       process,
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-      status: status || 'draft',
+      sopUrl: sopUrl || undefined,
       createdBy: {
         userId: user._id,
         userType: user.role === 'manager' ? 'Manager' : 'TeamMember',
@@ -82,19 +80,14 @@ const getAllSOPs = async (req, res) => {
     const { 
       page = 1, 
       limit = 10, 
-      status, 
       createdBy, 
       search,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
 
-    // Build filter object - show only parent versions in list
-    const filter = { isDeleted: false, isParentVersion: true };
-    
-    if (status) {
-      filter.status = status;
-    }
+    // Build filter object
+    const filter = { isDeleted: false };
     
     if (createdBy) {
       filter['createdBy.userId'] = createdBy;
@@ -103,8 +96,7 @@ const getAllSOPs = async (req, res) => {
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { process: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -177,7 +169,7 @@ const getSOPById = async (req, res) => {
 const updateSOP = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, process, tags, status } = req.body;
+    const { title, process, sopUrl } = req.body;
     const user = req.user;
 
     const sop = await SOP.findById(id);
@@ -188,10 +180,8 @@ const updateSOP = async (req, res) => {
 
     // Update fields
     if (title) sop.title = title;
-    if (description) sop.description = description;
     if (process) sop.process = process;
-    if (tags) sop.tags = tags.split(',').map(tag => tag.trim());
-    if (status) sop.status = status;
+    if (sopUrl !== undefined) sop.sopUrl = sopUrl || undefined;
 
     // Update updatedBy information
     sop.updatedBy = {
@@ -417,101 +407,6 @@ const getActiveSOPs = async (req, res) => {
 };
 
 /**
- * Create new version of SOP
- */
-const createSOPVersion = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, description, process, tags, status } = req.body;
-    const user = req.user;
-
-    // Find the current SOP
-    const currentSOP = await SOP.findById(id);
-    if (!currentSOP) {
-      return res.status(404).json({ error: 'SOP not found' });
-    }
-
-    // Prepare new version data
-    const newVersionData = {
-      title,
-      description,
-      process,
-      tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-      status: status || 'draft'
-    };
-
-    // Handle document uploads if files are provided
-    if (req.files && req.files.length > 0) {
-      const documents = [];
-      
-      for (const file of req.files) {
-        const key = `sop-documents/${Date.now()}-${file.originalname}`;
-        const uploadResult = await uploadFile(key, file.buffer, file.mimetype);
-        
-        documents.push({
-          filename: file.originalname,
-          originalName: file.originalname,
-          s3Key: uploadResult.key,
-          s3Url: uploadResult.location,
-          fileSize: file.size,
-          mimeType: file.mimetype,
-          uploadedBy: {
-            userId: user._id,
-            userType: user.role === 'manager' ? 'Manager' : 'TeamMember',
-            name: user.name,
-            email: user.email
-          }
-        });
-      }
-      
-      newVersionData.documents = documents;
-    }
-
-    // Create new version
-    const newVersion = await currentSOP.createNewVersion(newVersionData, user);
-
-    res.status(201).json({
-      message: 'New SOP version created successfully',
-      sop: newVersion
-    });
-  } catch (error) {
-    console.error('Create SOP version error:', error);
-    res.status(500).json({ 
-      error: 'Failed to create SOP version', 
-      details: error.message 
-    });
-  }
-};
-
-/**
- * Get all versions of an SOP
- */
-const getSOPVersions = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const sop = await SOP.findById(id);
-    if (!sop) {
-      return res.status(404).json({ error: 'SOP not found' });
-    }
-
-    const versions = await sop.getAllVersions();
-
-    res.status(200).json({
-      message: 'SOP versions retrieved successfully',
-      versions: versions,
-      count: versions.length
-    });
-  } catch (error) {
-    console.error('Get SOP versions error:', error);
-    res.status(500).json({ 
-      error: 'Failed to retrieve SOP versions', 
-      details: error.message 
-    });
-  }
-};
-
-/**
  * Soft delete SOP (move to bin)
  */
 const softDeleteSOP = async (req, res) => {
@@ -524,23 +419,9 @@ const softDeleteSOP = async (req, res) => {
       return res.status(404).json({ error: 'SOP not found' });
     }
 
-    // Check if this is a parent version
-    const isParent = sop.isParentVersion;
-
-    if (isParent && sop.versionHistory && sop.versionHistory.length > 0) {
-      // Cannot delete parent if it has child versions
-      return res.status(400).json({ 
-        error: 'Cannot delete parent SOP with existing versions',
-        message: 'This SOP has child versions. Please edit the SOP instead of deleting it, or delete all child versions first.'
-      });
-    }
-
     // Move to bin
     await Bin.softDelete(sop, 'sops', user, {
-      metadata: {
-        wasParent: isParent,
-        versionNumber: sop.versionNumber
-      }
+      metadata: {}
     });
 
     // Mark as deleted
@@ -640,9 +521,6 @@ module.exports = {
   removeDocument,
   getMySOPs,
   getActiveSOPs,
-  // Versioning methods
-  createSOPVersion,
-  getSOPVersions,
   softDeleteSOP,
   // Bin methods
   getBinItems,

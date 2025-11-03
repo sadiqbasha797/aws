@@ -6,9 +6,9 @@ import { map } from 'rxjs/operators';
 export interface SOP {
   _id: string;
   title: string;
-  description: string;
   process: string;
   documents: SOPDocument[];
+  sopUrl?: string;
   createdBy: {
     userId: string;
     userType: 'TeamMember' | 'Manager';
@@ -21,9 +21,8 @@ export interface SOP {
     name: string;
     email: string;
   };
-  status: 'draft' | 'active' | 'archived';
   version: number;
-  // Versioning fields
+  // Versioning fields (deprecated)
   parentSOPId?: string;
   versionNumber: number;
   isParentVersion: boolean;
@@ -37,7 +36,6 @@ export interface SOP {
     name: string;
     email: string;
   };
-  tags: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -77,10 +75,8 @@ export interface SOPResponse {
 
 export interface SOPCreateRequest {
   title: string;
-  description: string;
   process: string;
-  tags?: string;
-  status?: string;
+  sopUrl?: string;
 }
 
 export interface BinItem {
@@ -132,7 +128,6 @@ export class SOPService {
   getAllSOPs(params?: {
     page?: number;
     limit?: number;
-    status?: string;
     search?: string;
     sortBy?: string;
     sortOrder?: string;

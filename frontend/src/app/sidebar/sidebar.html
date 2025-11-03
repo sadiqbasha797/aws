@@ -1,6 +1,16 @@
-<div class="aws-sidebar w-64 h-screen fixed left-0 top-0 z-50 shadow-lg">
+<!-- Mobile Overlay -->
+<div *ngIf="isOpen" class="sidebar-overlay lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40" (click)="closeSidebar()"></div>
+
+<div class="aws-sidebar w-64 h-screen fixed left-0 top-0 z-50 shadow-lg flex flex-col transition-transform duration-300 ease-in-out"
+     [class.sidebar-open]="isOpen">
   <!-- AWS Logo and Header -->
-  <div class="p-6 border-b border-gray-700">
+  <div class="p-6 border-b border-gray-700 relative">
+    <!-- Close button for mobile -->
+    <button class="lg:hidden absolute top-4 right-4 p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" (click)="closeSidebar()">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
     <div class="flex items-center space-x-3">
       <div class="w-8 h-8 bg-orange-500 rounded flex items-center justify-center">
         <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -15,12 +25,13 @@
   </div>
 
   <!-- Navigation Menu -->
-  <nav class="p-4">
-    <ul class="space-y-2">
+  <nav class="p-4 flex flex-col flex-1 pb-20">
+    <ul class="space-y-2 flex-1">
       <li>
         <a routerLink="/dashboard" 
            routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+           (click)="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <rect x="3" y="3" width="7" height="7"/>
             <rect x="14" y="3" width="7" height="7"/>
@@ -34,7 +45,8 @@
       <li>
         <a routerLink="/reliability" 
            routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+           (click)="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
@@ -45,7 +57,8 @@
       <li>
         <a routerLink="/productivity" 
            routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+           (click)="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
           </svg>
@@ -56,7 +69,8 @@
       <li>
         <a routerLink="/sops" 
            routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+           (click)="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
@@ -64,22 +78,12 @@
         </a>
       </li>
       
-      <li>
-        <a routerLink="/bin" 
-           routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-          <span class="font-medium">Recycle Bin</span>
-        </a>
-      </li>
-      
       <!-- Manager Only Section -->
       <li *ngIf="isManager()">
         <a routerLink="/team-management" 
            routerLinkActive="active" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group">
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+           (click)="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
@@ -87,10 +91,23 @@
         </a>
       </li>
     </ul>
+
+    <!-- Trash at Bottom -->
+    <div class="mt-auto pt-4">
+      <a routerLink="/bin" 
+         routerLinkActive="active" 
+         class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 group"
+         (click)="closeSidebar()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        <span class="font-medium">Trash</span>
+      </a>
+    </div>
   </nav>
 
   <!-- Footer -->
-  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-gray-800">
     <div class="text-center">
       <p class="text-xs text-gray-400">AWS Management Console</p>
       <p class="text-xs text-gray-500 mt-1">v1.0.0</p>

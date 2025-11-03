@@ -16,34 +16,6 @@ export interface TeamMember {
   updatedAt: string;
 }
 
-export interface TeamBatch {
-  _id: string;
-  batchName: string;
-  batchNumber: string;
-  batchDescription?: string;
-  batchMembers: string[]; // Array of team member IDs
-  createdBy: {
-    userId: string;
-    userType: string;
-    name: string;
-    email: string;
-  };
-  batchImage?: {
-    filename: string;
-    originalName: string;
-    s3Key: string;
-    s3Url: string;
-    fileSize: number;
-    mimeType: string;
-    uploadedAt: string;
-  };
-  status?: string;
-  startDate?: string;
-  endDate?: string;
-  tags?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
 
 @Injectable({
   providedIn: 'root'
@@ -60,13 +32,6 @@ export class TeamService {
     });
   }
 
-  private getHeadersForFormData(): HttpHeaders {
-    const token = localStorage.getItem('token');
-    // Don't set Content-Type for FormData - browser will set it automatically with boundary
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-  }
 
   // Team Member Operations
   getAllTeamMembers(): Observable<{message: string, teamMembers: TeamMember[], count: number}> {
@@ -102,60 +67,6 @@ export class TeamService {
   deleteTeamMember(id: string): Observable<{message: string}> {
     return this.http.delete<{message: string}>(
       `${this.baseUrl}/team-members/${id}`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  // Team Batch Operations
-  getAllBatches(): Observable<{message: string, batches: TeamBatch[], count: number}> {
-    return this.http.get<{message: string, batches: TeamBatch[], count: number}>(
-      `${this.baseUrl}/team-batches`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  getBatchById(id: string): Observable<{message: string, batch: TeamBatch}> {
-    return this.http.get<{message: string, batch: TeamBatch}>(
-      `${this.baseUrl}/team-batches/${id}`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  createBatch(batchData: FormData): Observable<{message: string, batch: TeamBatch}> {
-    return this.http.post<{message: string, batch: TeamBatch}>(
-      `${this.baseUrl}/team-batches`,
-      batchData,
-      { headers: this.getHeadersForFormData() }
-    );
-  }
-
-  updateBatch(id: string, batchData: Partial<TeamBatch>): Observable<{message: string, batch: TeamBatch}> {
-    return this.http.patch<{message: string, batch: TeamBatch}>(
-      `${this.baseUrl}/team-batches/${id}`,
-      batchData,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  deleteBatch(id: string): Observable<{message: string}> {
-    return this.http.delete<{message: string}>(
-      `${this.baseUrl}/team-batches/${id}`,
-      { headers: this.getHeaders() }
-    );
-  }
-
-  // Batch Member Management
-  addMembersToBatch(batchId: string, memberIds: string[]): Observable<{message: string, batch: TeamBatch}> {
-    return this.http.post<{message: string, batch: TeamBatch}>(
-      `${this.baseUrl}/team-batches/${batchId}/members`,
-      { memberIds },
-      { headers: this.getHeaders() }
-    );
-  }
-
-  removeMemberFromBatch(batchId: string, memberId: string): Observable<{message: string, batch: TeamBatch}> {
-    return this.http.delete<{message: string, batch: TeamBatch}>(
-      `${this.baseUrl}/team-batches/${batchId}/members/${memberId}`,
       { headers: this.getHeaders() }
     );
   }

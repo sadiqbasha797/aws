@@ -89,7 +89,7 @@ The SOP API provides a comprehensive system for managing Standard Operating Proc
 ```javascript
 {
   originalId: ObjectId,              // ID of deleted item
-  collectionName: String,            // 'sops', 'teambatches', etc.
+  collectionName: String,            // 'sops', 'documents', 'users', etc.
   data: Mixed,                       // Complete original document
   deletedBy: {
     userId: ObjectId,
@@ -376,7 +376,7 @@ GET /api/sops/bin/items?collection=sops
 Authorization: Bearer <token>
 
 Query Parameters:
-- collection: string (optional - 'sops', 'teambatches', etc.)
+- collection: string (optional - 'sops', 'documents', 'users', etc.)
 
 Privacy: Users only see items THEY deleted
 

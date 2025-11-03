@@ -15,10 +15,8 @@ import { AuthService } from '../services/auth.service';
 export class SOPCreateComponent {
   sopData: SOPCreateRequest = {
     title: '',
-    description: '',
     process: '',
-    tags: '',
-    status: 'draft'
+    sopUrl: ''
   };
 
   loading = false;

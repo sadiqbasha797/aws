@@ -9,7 +9,7 @@ const binSchema = new mongoose.Schema({
   collectionName: {
     type: String,
     required: true,
-    enum: ['sops', 'teambatches', 'documents', 'users'] // Extensible for future collections
+    enum: ['sops', 'documents', 'users'] // Extensible for future collections
   },
   
   // Complete original document data
@@ -130,8 +130,38 @@ binSchema.methods.restore = async function(user) {
   const mongoose = require('mongoose');
   
   try {
-    // Get the target collection
-    const targetModel = mongoose.model(this.collectionName);
+    // Map collectionName to actual Mongoose model name
+    const modelNameMap = {
+      'sops': 'SOP',
+      'documents': 'Document',
+      'users': 'User',
+      'teamMembers': 'TeamMember',
+      'managers': 'Manager'
+    };
+    
+    // Get the model name, defaulting to capitalized collectionName if not in map
+    const modelName = modelNameMap[this.collectionName] || 
+                     this.collectionName.charAt(0).toUpperCase() + this.collectionName.slice(1);
+    
+    // Get the target model - ensure it's loaded
+    let targetModel;
+    try {
+      targetModel = mongoose.model(modelName);
+    } catch (err) {
+      // Model not registered, try to require it based on model name
+      if (modelName === 'SOP') {
+        require('./SOP');
+        targetModel = mongoose.model('SOP');
+      } else if (modelName === 'TeamMember') {
+        require('./TeamMember');
+        targetModel = mongoose.model('TeamMember');
+      } else if (modelName === 'Manager') {
+        require('./Manager');
+        targetModel = mongoose.model('Manager');
+      } else {
+        throw new Error(`Model ${modelName} not found. Make sure the model is imported in your controller.`);
+      }
+    }
     
     // Prepare restoration data
     const restorationData = { ...this.data };
@@ -144,6 +174,10 @@ binSchema.methods.restore = async function(user) {
         // Restore as child version
         restorationData.parentSOPId = this.restoreLocation.parentId;
       }
+      // Clear soft delete flags
+      restorationData.isDeleted = false;
+      restorationData.deletedAt = null;
+      restorationData.deletedBy = undefined;
     }
     
     // Create restored document

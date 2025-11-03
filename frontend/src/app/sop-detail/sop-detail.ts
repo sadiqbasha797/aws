@@ -23,10 +23,6 @@ export class SOPDetailComponent implements OnInit {
   selectedFiles: FileList | null = null;
   showUploadSection = false;
   
-  // Versioning
-  versions: SOP[] = [];
-  loadingVersions = false;
-  
   // User info
   userRole = '';
   userId = '';
@@ -79,11 +75,6 @@ export class SOPDetailComponent implements OnInit {
       next: (response) => {
         this.sop = response.sop;
         this.loading = false;
-        
-        // Load versions if this is a parent SOP
-        if (this.sop.isParentVersion) {
-          this.loadVersions(id);
-        }
       },
       error: (error) => {
         console.error('Error loading SOP:', error);
@@ -100,21 +91,6 @@ export class SOPDetailComponent implements OnInit {
     }
   }
 
-  loadVersions(sopId: string): void {
-    this.loadingVersions = true;
-    
-    this.sopService.getSOPVersions(sopId).subscribe({
-      next: (response) => {
-        // Filter out the current parent version from the list
-        this.versions = response.versions.filter(v => v._id !== sopId);
-        this.loadingVersions = false;
-      },
-      error: (error) => {
-        console.error('Error loading versions:', error);
-        this.loadingVersions = false;
-      }
-    });
-  }
 
   onFileSelect(event: any): void {
     const files = event.target.files;
@@ -237,19 +213,6 @@ export class SOPDetailComponent implements OnInit {
     return new Date(dateString).toLocaleString();
   }
 
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
-  }
-
   canEditSOP(): boolean {
     // Only the creator can edit the SOP
     return !!(this.sop && this.sop.createdBy && this.sop.createdBy.userId === this.userId);
@@ -302,24 +265,6 @@ export class SOPDetailComponent implements OnInit {
     }
   }
 
-  uploadNewVersion(): void {
-    if (this.sop && this.canCreateVersion()) {
-      // Navigate to upload new version (not edit, but fresh upload form)
-      this.router.navigate(['/sops', this.sop._id, 'upload-version']);
-    }
-  }
-
-  canCreateVersion(): boolean {
-    return this.sopService.canCreateVersion(this.sop!);
-  }
-
-  viewVersion(version: SOP): void {
-    this.router.navigate(['/sops', version._id]);
-  }
-
-  formatVersionDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
 
   viewDocument(document: SOPDocument): void {
     this.sopService.getDocumentViewUrl(document.s3Key).subscribe({
@@ -334,13 +279,7 @@ export class SOPDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    // If this is a child version, go back to parent SOP
-    if (this.sop && this.sop.parentSOPId) {
-      this.router.navigate(['/sops', this.sop.parentSOPId]);
-    } else {
-      // Otherwise go back to SOP list
-      this.router.navigate(['/sops']);
-    }
+    this.router.navigate(['/sops']);
   }
 
   clearFileSelection(): void {

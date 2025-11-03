@@ -20,14 +20,7 @@
           <i class="fas fa-user-tag mr-1"></i>
           {{ userRole || 'user' }}
         </div>
-        <!-- Action Buttons -->
-        <button 
-          *ngIf="userRole === 'manager'" 
-          (click)="toggleView()" 
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-sync-alt"></i>
-          <span>{{ showAggregatedView ? 'Individual View' : 'Team Summary' }}</span>
-        </button>
+        <!-- View toggle removed -->
         <button 
           *ngIf="userRole === 'manager'" 
           (click)="showCreateForm()" 
@@ -58,8 +51,315 @@
     </div>
   </div>
 
-  <!-- Filters Section -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+  <!-- Simplified Records Table: current month by default, with Show all option -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-table text-orange-500 mr-2"></i>
+        Reliability Records - {{ filters.month ? 'Current Month' : 'All' }}
+      </h3>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-600">Week</label>
+          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
+            <option [ngValue]="undefined">All</option>
+            <option *ngFor="let w of getWeekOptions()" [ngValue]="w">{{ w }}</option>
+          </select>
+        </div>
+        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
+        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto table-container">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+              <div class="flex items-center justify-between">
+                <span>DA ID</span>
+                <button 
+                  (click)="toggleDaIdFilterMenu($event)"
+                  class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                  <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                  <span *ngIf="columnFilters.selectedDaIds.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+              </div>
+              <!-- DA ID Filter Dropdown -->
+              <div *ngIf="showDaIdFilter" 
+                   class="filter-dropdown border border-gray-200 rounded-lg max-h-64 overflow-y-auto min-w-[200px]"
+                   [style.top.px]="daIdFilterPosition.top"
+                   [style.left.px]="daIdFilterPosition.left">
+                <div class="p-2 border-b border-gray-200">
+                  <input 
+                    type="text" 
+                    placeholder="Search DA ID..." 
+                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    [(ngModel)]="daIdSearchTerm">
+                </div>
+                <div class="p-2 max-h-48 overflow-y-auto">
+                  <div *ngFor="let daId of getFilteredDaIds()" 
+                       class="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"
+                       (click)="toggleDaIdFilter(daId)">
+                    <input 
+                      type="checkbox" 
+                      [checked]="isDaIdSelected(daId)"
+                      (change)="toggleDaIdFilter(daId)"
+                      class="mr-2 cursor-pointer"
+                      (click)="$event.stopPropagation()">
+                    <span class="text-sm text-gray-700">{{ daId }}</span>
+                  </div>
+                  <div *ngIf="getFilteredDaIds().length === 0" class="text-sm text-gray-500 px-2 py-1">No DA IDs found</div>
+                </div>
+                <div class="p-2 border-t border-gray-200 flex justify-between">
+                  <button (click)="clearDaIdFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                  <button (click)="showDaIdFilter = false" class="text-xs text-orange-600 hover:text-orange-800">Done</button>
+                </div>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+              <div class="flex items-center justify-between">
+                <span>Process</span>
+                <button 
+                  (click)="toggleProcessFilterMenu($event)"
+                  class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                  <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                  <span *ngIf="columnFilters.selectedProcesses.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+              </div>
+              <!-- Process Filter Dropdown -->
+              <div *ngIf="showProcessFilter" 
+                   class="filter-dropdown border border-gray-200 rounded-lg max-h-64 overflow-y-auto min-w-[200px]"
+                   [style.top.px]="processFilterPosition.top"
+                   [style.left.px]="processFilterPosition.left">
+                <div class="p-2 border-b border-gray-200">
+                  <input 
+                    type="text" 
+                    placeholder="Search Process..." 
+                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    [(ngModel)]="processSearchTerm">
+                </div>
+                <div class="p-2 max-h-48 overflow-y-auto">
+                  <div *ngFor="let process of getFilteredProcesses()" 
+                       class="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"
+                       (click)="toggleProcessFilter(process)">
+                    <input 
+                      type="checkbox" 
+                      [checked]="isProcessSelected(process)"
+                      (change)="toggleProcessFilter(process)"
+                      class="mr-2 cursor-pointer"
+                      (click)="$event.stopPropagation()">
+                    <span class="text-sm text-gray-700">{{ process }}</span>
+                  </div>
+                  <div *ngIf="getFilteredProcesses().length === 0" class="text-sm text-gray-500 px-2 py-1">No processes found</div>
+                </div>
+                <div class="p-2 border-t border-gray-200 flex justify-between">
+                  <button (click)="clearProcessFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                  <button (click)="showProcessFilter = false" class="text-xs text-orange-600 hover:text-orange-800">Done</button>
+                </div>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+              <div class="flex items-center justify-between">
+                <span>Date</span>
+                <button 
+                  (click)="toggleDateFilterMenu($event)"
+                  class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                  <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                  <span *ngIf="columnFilters.dateFrom || columnFilters.dateTo" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+              </div>
+              <!-- Date Range Filter Popup -->
+              <div *ngIf="showDateFilter" 
+                   class="filter-dropdown border border-gray-200 rounded-lg p-4 min-w-[280px]"
+                   [style.top.px]="dateFilterPosition.top"
+                   [style.left.px]="dateFilterPosition.left">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3">Filter by Date Range</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">From Date</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="columnFilters.dateFrom"
+                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">To Date</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="columnFilters.dateTo"
+                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                  </div>
+                </div>
+                <div class="flex justify-between mt-4 pt-3 border-t border-gray-200">
+                  <button (click)="clearDateFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                  <button (click)="applyDateFilter()" class="text-xs text-orange-600 hover:text-orange-800">Apply</button>
+                </div>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let data of reliabilityData" class="hover:bg-gray-50 transition-colors duration-150">
+            <td *ngIf="userRole === 'manager'" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ data.daId }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ data.processname }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ data.job_id }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ data.totalTasks }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-bold" [class]="getGradeColor(data.overallReliabilityScore)">{{ data.overallReliabilityScore | number:'1.1-1' }}%</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getWeekNumber(data.createdAt!) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(data.createdAt!) }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="userRole === 'manager' ? 7 : 6" class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                  Showing <span class="font-medium">{{ reliabilityData.length }}</span> record(s)
+                </div>
+                <div class="relative">
+                  <button 
+                    (click)="toggleCalculationMenu()"
+                    class="calculation-button bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                    <i class="fas fa-calculator"></i>
+                    <span class="text-sm font-medium">Calculations</span>
+                  </button>
+                  <!-- Calculation Menu Dropdown -->
+                  <div *ngIf="showCalculationMenu" 
+                       class="calculation-menu absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                    <div class="py-2">
+                      <button 
+                        (click)="calculateStatistics('average')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-chart-line text-blue-500"></i>
+                        <span>Average</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('min')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-arrow-down text-red-500"></i>
+                        <span>Minimum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('max')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-arrow-up text-green-500"></i>
+                        <span>Maximum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('sum')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-plus-circle text-purple-500"></i>
+                        <span>Sum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('count')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-list-ol text-orange-500"></i>
+                        <span>Count</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('median')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-chart-bar text-indigo-500"></i>
+                        <span>Median</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div *ngIf="reliabilityData.length === 0 && !isLoading" class="text-center py-12">
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">No reliability data found</h3>
+      <p class="text-gray-600">Data will appear here once available.</p>
+    </div>
+    
+    <!-- Calculation Results Display -->
+    <div *ngIf="calculationResults && !calculationResults.error" 
+         class="mt-4 bg-gradient-to-r from-orange-50 to-blue-50 border border-orange-200 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+          <i class="fas fa-chart-pie text-orange-500"></i>
+          <span>{{ calculationResults.type }} Results</span>
+        </h4>
+        <button 
+          (click)="closeCalculationResults()"
+          class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div *ngIf="calculationResults.overallReliabilityScore !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Avg Reliability Score</div>
+          <div class="text-xl font-bold" [class]="getGradeColor(calculationResults.overallReliabilityScore)">
+            {{ calculationResults.overallReliabilityScore | number:'1.2-2' }}%
+          </div>
+        </div>
+        <div *ngIf="calculationResults.totalTasks !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">{{ calculationResults.type === 'Sum' ? 'Total Tasks' : 'Avg Tasks' }}</div>
+          <div class="text-xl font-bold text-gray-900">
+            {{ calculationResults.totalTasks | number:'1.0-0' }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.totalDefects !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">{{ calculationResults.type === 'Sum' ? 'Total Defects' : 'Avg Defects' }}</div>
+          <div class="text-xl font-bold text-red-600">
+            {{ calculationResults.totalDefects | number:'1.0-0' }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.recordCount !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Records</div>
+          <div class="text-xl font-bold text-gray-900">
+            {{ calculationResults.recordCount }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.totalOpportunities !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Total Opportunities</div>
+          <div class="text-xl font-bold text-blue-600">
+            {{ calculationResults.totalOpportunities | number:'1.0-0' }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.uniqueDaIds !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Unique DA IDs</div>
+          <div class="text-xl font-bold text-purple-600">
+            {{ calculationResults.uniqueDaIds }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.uniqueProcesses !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Unique Processes</div>
+          <div class="text-xl font-bold text-indigo-600">
+            {{ calculationResults.uniqueProcesses }}
+          </div>
+        </div>
+      </div>
+      <div *ngIf="calculationResults.record" class="mt-3 pt-3 border-t border-gray-200">
+        <div class="text-sm text-gray-600">
+          <span class="font-medium">Best/Worst Record:</span> 
+          <span *ngIf="calculationResults.record.daId">{{ calculationResults.record.daId }} - </span>
+          <span>{{ calculationResults.record.processname }} - Score: {{ calculationResults.record.overallReliabilityScore | number:'1.2-2' }}%</span>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="calculationResults && calculationResults.error" 
+         class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center space-x-2 text-red-700">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ calculationResults.error }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section (hidden) -->
+  <div *ngIf="false" class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
     <!-- Filter Toggle Button -->
     <div class="p-6 pb-4">
       <div class="flex items-center justify-between">
@@ -147,8 +447,8 @@
     </div>
   </div>
 
-  <!-- Team Overview - Show when no team member is selected -->
-  <div *ngIf="userRole === 'manager' && !selectedTeamMember">
+  <!-- Team Overview (hidden) -->
+  <div *ngIf="false">
     <!-- Performance Stats -->
     <div *ngIf="performanceStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6">
@@ -167,7 +467,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Avg Team Score</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats.avgReliabilityScore | number:'1.1-1' }}%</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats?.avgReliabilityScore | number:'1.1-1' }}%</p>
           </div>
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
             <i class="fas fa-chart-line text-green-600 text-xl"></i>
@@ -179,7 +479,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Total Tasks</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats.totalTasks | number }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats?.totalTasks | number }}</p>
           </div>
           <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
             <i class="fas fa-tasks text-orange-600 text-xl"></i>
@@ -191,7 +491,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Avg Defect Rate</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats.avgDefectRate | number:'1.1-1' }}%</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ performanceStats?.avgDefectRate | number:'1.1-1' }}%</p>
           </div>
           <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
             <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
@@ -300,8 +600,8 @@
       </div>
   </div>
 
-  <!-- User View (Non-Manager) -->
-  <div *ngIf="userRole !== 'manager'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <!-- User View (hidden) -->
+  <div *ngIf="false" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
       <h3 class="text-lg font-semibold text-gray-900">
         <i class="fas fa-chart-bar text-orange-500 mr-2"></i>
@@ -368,8 +668,8 @@
   </div>
 </div>
 
-<!-- Team Member Detail View -->
-<div *ngIf="selectedTeamMember" class="space-y-6">
+<!-- Team Member Detail View (hidden) -->
+<div *ngIf="false" class="space-y-6">
   <!-- Back Button and Header -->
   <div class="flex items-center justify-between mb-8">
     <div class="flex items-center">
@@ -566,8 +866,8 @@
 
 </div>
 
-<!-- Create/Edit Form Modal (Manager Only) -->
-<div *ngIf="showForm && userRole === 'manager'"
+<!-- Form removed - now using separate create page -->
+<div *ngIf="false && userRole === 'manager'"
   class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50">
   <div class="relative top-20 mx-auto p-6 border border-gray-200 w-11/12 md:w-3/4 lg:w-1/2 shadow-2xl rounded-xl bg-white">
     <div>

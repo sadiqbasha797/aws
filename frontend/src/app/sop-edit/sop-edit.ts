@@ -22,10 +22,8 @@ export class SOPEditComponent implements OnInit {
   // Form data
   formData: SOPCreateRequest = {
     title: '',
-    description: '',
     process: '',
-    tags: '',
-    status: 'draft'
+    sopUrl: ''
   };
 
   // User info
@@ -83,10 +81,8 @@ export class SOPEditComponent implements OnInit {
         // Populate form data
         this.formData = {
           title: this.sop.title || '',
-          description: this.sop.description || '',
           process: this.sop.process || '',
-          tags: this.sop.tags?.join(', ') || '',
-          status: this.sop.status || 'draft'
+          sopUrl: this.sop.sopUrl || ''
         };
         
         this.loading = false;
@@ -121,10 +117,8 @@ export class SOPEditComponent implements OnInit {
     // Prepare data for update
     const updateData: Partial<SOPCreateRequest> = {
       title: this.formData.title.trim(),
-      description: this.formData.description?.trim() || '',
       process: this.formData.process?.trim() || '',
-      tags: this.formData.tags?.trim() || '',
-      status: this.formData.status
+      sopUrl: this.formData.sopUrl?.trim() || undefined
     };
 
     this.sopService.updateSOP(this.sop._id, updateData).subscribe({

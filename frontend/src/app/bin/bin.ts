@@ -98,8 +98,6 @@ export class BinComponent implements OnInit {
     switch (collectionName) {
       case 'sops':
         return 'fas fa-file-alt';
-      case 'teambatches':
-        return 'fas fa-users';
       default:
         return 'fas fa-box';
     }
@@ -109,8 +107,6 @@ export class BinComponent implements OnInit {
     switch (collectionName) {
       case 'sops':
         return 'bg-orange-500';
-      case 'teambatches':
-        return 'bg-blue-500';
       default:
         return 'bg-gray-500';
     }

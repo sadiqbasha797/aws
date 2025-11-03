@@ -23,55 +23,31 @@
       </div>
 
       <div class="form-group">
-        <label for="description">Description</label>
-        <textarea 
-          id="description"
-          [(ngModel)]="sopData.description" 
-          name="description"
-          class="form-control"
-          rows="3"
-          placeholder="Enter SOP description"></textarea>
-      </div>
-
-      <div class="form-group">
         <label for="process">Process</label>
-        <textarea 
+        <input 
+          type="text" 
           id="process"
           [(ngModel)]="sopData.process" 
           name="process"
           class="form-control"
-          rows="8"
-          placeholder="Enter detailed process steps"></textarea>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="tags">Tags</label>
-          <input 
-            type="text" 
-            id="tags"
-            [(ngModel)]="sopData.tags" 
-            name="tags"
-            class="form-control"
-            placeholder="Enter tags separated by commas">
-        </div>
-
-        <div class="form-group">
-          <label for="status">Status</label>
-          <select 
-            id="status"
-            [(ngModel)]="sopData.status" 
-            name="status"
-            class="form-control">
-            <option value="draft">Draft</option>
-            <option value="active">Active</option>
-          </select>
-        </div>
+          placeholder="Enter process name">
       </div>
     </div>
 
     <div class="form-section">
-      <h2>Documents (Optional)</h2>
+      <h2>Documents & URL (Optional)</h2>
+      
+      <div class="form-group">
+        <label for="sopUrl">SOP URL</label>
+        <input 
+          type="url" 
+          id="sopUrl"
+          [(ngModel)]="sopData.sopUrl" 
+          name="sopUrl"
+          class="form-control"
+          placeholder="https://example.com/sop">
+        <p class="form-hint">Enter a URL to the SOP (e.g., external link or cloud storage link)</p>
+      </div>
       
       <div class="file-upload">
         <input 
@@ -79,16 +55,16 @@
           id="documents"
           multiple 
           (change)="onFileSelect($event)"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.wmv"
           class="file-input">
         
         <label for="documents" class="file-input-label">
           <i class="fas fa-cloud-upload-alt"></i>
-          Choose Documents
+          Choose Documents/Video
         </label>
         
         <p class="file-info">
-          Upload initial documents (PDF, Word, Excel, PowerPoint, Text, Images)
+          Upload documents or video (PDF, Word, Excel, PowerPoint, Text, Images, Video files)
         </p>
       </div>
 

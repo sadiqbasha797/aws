@@ -8,7 +8,25 @@
   background-color: #ea580c; /* bg-orange-600 */
 }
 
-/* Responsive sidebar */
+/* Mobile sidebar - hidden by default, shown when sidebar-open class is present */
+@media (max-width: 1023px) {
+  .aws-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .aws-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+/* Desktop sidebar - always visible */
+@media (min-width: 1024px) {
+  .aws-sidebar {
+    transform: translateX(0) !important;
+  }
+}
+
+/* Responsive sidebar width */
 @media (max-width: 768px) {
   .aws-sidebar {
     width: 14rem; /* w-56 */

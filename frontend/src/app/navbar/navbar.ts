@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
+import { SidebarService } from '../services/sidebar.service';
 
 @Component({
   selector: 'app-navbar',
@@ -14,12 +15,12 @@ export class Navbar {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private sidebarService: SidebarService
   ) {}
 
   toggleSidebar() {
-    // This will be implemented when we add sidebar toggle functionality
-    console.log('Toggle sidebar');
+    this.sidebarService.toggle();
   }
 
   toggleUserMenu() {

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TeamService, TeamMember, TeamBatch } from '../services/team.service';
+import { TeamService, TeamMember } from '../services/team.service';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -13,15 +13,9 @@ import { AuthService } from '../services/auth.service';
   styleUrls: ['./team-management.css']
 })
 export class TeamManagementComponent implements OnInit {
-  activeTab: 'members' | 'batches' = 'members';
-  
   // Team Members
   teamMembers: TeamMember[] = [];
   loadingMembers = true;
-  
-  // Batches
-  batches: TeamBatch[] = [];
-  loadingBatches = true;
   
   error = '';
   userRole = '';
@@ -35,7 +29,6 @@ export class TeamManagementComponent implements OnInit {
   ngOnInit(): void {
     this.checkManagerAccess();
     this.loadTeamMembers();
-    this.loadBatches();
   }
 
   checkManagerAccess(): void {
@@ -46,9 +39,6 @@ export class TeamManagementComponent implements OnInit {
     }
   }
 
-  switchTab(tab: 'members' | 'batches'): void {
-    this.activeTab = tab;
-  }
 
   // Team Member Operations
   loadTeamMembers(): void {
@@ -90,57 +80,6 @@ export class TeamManagementComponent implements OnInit {
     });
   }
 
-  // Batch Operations
-  loadBatches(): void {
-    this.loadingBatches = true;
-    this.teamService.getAllBatches().subscribe({
-      next: (response) => {
-        this.batches = response.batches;
-        this.loadingBatches = false;
-      },
-      error: (error) => {
-        console.error('Error loading batches:', error);
-        this.error = 'Failed to load batches';
-        this.loadingBatches = false;
-      }
-    });
-  }
-
-  createBatch(): void {
-    this.router.navigate(['/batches/create']);
-  }
-
-  editBatch(batch: TeamBatch): void {
-    this.router.navigate(['/batches', batch._id, 'edit']);
-  }
-
-  deleteBatch(batch: TeamBatch): void {
-    if (!confirm(`Are you sure you want to delete ${batch.batchName}?`)) {
-      return;
-    }
-
-    this.teamService.deleteBatch(batch._id).subscribe({
-      next: () => {
-        this.loadBatches();
-      },
-      error: (error) => {
-        console.error('Error deleting batch:', error);
-        alert('Failed to delete batch');
-      }
-    });
-  }
-
-  getMemberNames(memberIds: string[]): string {
-    if (!memberIds || memberIds.length === 0) {
-      return 'No members assigned';
-    }
-    return memberIds
-      .map(id => {
-        const member = this.teamMembers.find(m => m._id === id);
-        return member ? member.name : 'Unknown';
-      })
-      .join(', ');
-  }
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();

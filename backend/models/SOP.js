@@ -6,12 +6,11 @@ const sopSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, 'Title cannot exceed 200 characters']
   },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
-  },
   process: {
+    type: String,
+    trim: true
+  },
+  sopUrl: {
     type: String,
     trim: true
   },
@@ -87,33 +86,10 @@ const sopSchema = new mongoose.Schema({
       type: String
     }
   },
-  status: {
-    type: String,
-    enum: ['draft', 'active', 'archived'],
-    default: 'draft'
-  },
   version: {
     type: Number,
     default: 1
   },
-  // Versioning System
-  parentSOPId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SOP',
-    default: null  // null for original SOP (v1)
-  },
-  versionNumber: {
-    type: Number,
-    default: 1
-  },
-  isParentVersion: {
-    type: Boolean,
-    default: true  // First version is always parent
-  },
-  versionHistory: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SOP'
-  }],
   // Soft Delete
   isDeleted: {
     type: Boolean,
@@ -139,10 +115,6 @@ const sopSchema = new mongoose.Schema({
       type: String
     }
   },
-  tags: [{
-    type: String,
-    trim: true
-  }]
 }, {
   timestamps: true
 });
@@ -150,12 +122,7 @@ const sopSchema = new mongoose.Schema({
 // Index for better query performance
 sopSchema.index({ title: 1 });
 sopSchema.index({ 'createdBy.userId': 1 });
-sopSchema.index({ status: 1 });
 sopSchema.index({ createdAt: -1 });
-// Versioning indexes
-sopSchema.index({ parentSOPId: 1 });
-sopSchema.index({ versionNumber: 1 });
-sopSchema.index({ isParentVersion: 1 });
 sopSchema.index({ isDeleted: 1 });
 
 // Virtual for document count
@@ -191,96 +158,9 @@ sopSchema.statics.findByCreator = function(userId, userType) {
   });
 };
 
-// Static method to find active SOPs
+// Static method to find active SOPs (non-deleted)
 sopSchema.statics.findActive = function() {
-  return this.find({ status: 'active', isDeleted: false });
-};
-
-// Versioning Methods
-sopSchema.methods.createNewVersion = async function(newVersionData, user) {
-  const SOP = this.constructor;
-  
-  // Get the parent SOP (original or current parent)
-  const parentSOP = this.parentSOPId ? await SOP.findById(this.parentSOPId) : this;
-  
-  // Find the highest version number in the version history
-  const allVersions = await SOP.find({
-    $or: [
-      { _id: parentSOP._id },
-      { parentSOPId: parentSOP._id }
-    ],
-    isDeleted: false
-  }).sort({ versionNumber: -1 });
-  
-  const nextVersionNumber = allVersions.length > 0 ? allVersions[0].versionNumber + 1 : 1;
-  
-  // Create new version
-  const newVersion = new SOP({
-    ...newVersionData,
-    parentSOPId: parentSOP._id,
-    versionNumber: nextVersionNumber,
-    isParentVersion: false,
-    versionHistory: [],
-    createdBy: {
-      userId: user._id,
-      userType: user.role === 'manager' ? 'Manager' : 'TeamMember',
-      name: user.name,
-      email: user.email
-    },
-    updatedBy: {
-      userId: user._id,
-      userType: user.role === 'manager' ? 'Manager' : 'TeamMember',
-      name: user.name,
-      email: user.email
-    }
-  });
-  
-  await newVersion.save();
-  
-  // Update parent's version history
-  parentSOP.versionHistory.push(newVersion._id);
-  await parentSOP.save();
-  
-  return newVersion;
-};
-
-sopSchema.methods.getAllVersions = function() {
-  const SOP = this.constructor;
-  const parentId = this.parentSOPId || this._id;
-  
-  return SOP.find({
-    $or: [
-      { _id: parentId },
-      { parentSOPId: parentId }
-    ],
-    isDeleted: false
-  }).sort({ versionNumber: 1 });
-};
-
-sopSchema.methods.getParentSOP = function() {
-  if (!this.parentSOPId) return this;
-  return this.constructor.findById(this.parentSOPId);
-};
-
-sopSchema.methods.promoteToParent = async function() {
-  const SOP = this.constructor;
-  
-  // Remove parent status from current parent
-  if (this.parentSOPId) {
-    await SOP.findByIdAndUpdate(this.parentSOPId, { isParentVersion: false });
-  }
-  
-  // Make this version the parent
-  this.isParentVersion = true;
-  this.parentSOPId = null;
-  
-  // Update all other versions to point to this as parent
-  await SOP.updateMany(
-    { parentSOPId: this.parentSOPId || this._id, _id: { $ne: this._id } },
-    { parentSOPId: this._id }
-  );
-  
-  return this.save();
+  return this.find({ isDeleted: false });
 };
 
 // Static method to find non-deleted SOPs

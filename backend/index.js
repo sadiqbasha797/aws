@@ -21,7 +21,7 @@ app.use('/api/reliability', require('./routes/reliabilityRoutes'));
 app.use('/api/productivity', require('./routes/productivityRoutes'));
 app.use('/api/files', require('./routes/fileRoutes'));
 app.use('/api/sops', require('./routes/sopRoutes'));
-app.use('/api/team-batches', require('./routes/teamBatchRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

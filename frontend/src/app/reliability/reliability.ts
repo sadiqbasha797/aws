@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ReliabilityService, ReliabilityData, PerformanceStats } from '../services/reliability.service';
 import { AuthService } from '../services/auth.service';
 
@@ -31,7 +32,7 @@ export class Reliability implements OnInit {
   successMessage = '';
   activeTab = 'overview';
   isInitialized = false;
-  showAggregatedView = true;
+  showAggregatedView = false;
   selectedTeamMember: any = null;
   teamMemberDetails: ReliabilityData[] = [];
   teamMemberStats: any = null;
@@ -43,14 +44,45 @@ export class Reliability implements OnInit {
   totalRecords = 0;
   pageSize = 10;
   
-  // Filters
+  // Filters (default to current month and year)
   filters = {
     year: new Date().getFullYear(),
-    month: undefined as number | undefined,
+    month: new Date().getMonth() + 1 as number | undefined,
+    week: undefined as number | undefined,
     search: '',
     minScore: undefined as number | undefined,
     maxScore: undefined as number | undefined
   };
+  
+  // Column filters
+  columnFilters = {
+    selectedDaIds: [] as string[],
+    selectedProcesses: [] as string[],
+    dateFrom: undefined as string | undefined,
+    dateTo: undefined as string | undefined
+  };
+  
+  // Filter dropdown visibility
+  showDaIdFilter = false;
+  showProcessFilter = false;
+  showDateFilter = false;
+  
+  // Search terms for filter dropdowns
+  daIdSearchTerm = '';
+  processSearchTerm = '';
+  
+  // Dropdown positions
+  daIdFilterPosition = { top: 0, left: 0 };
+  processFilterPosition = { top: 0, left: 0 };
+  dateFilterPosition = { top: 0, left: 0 };
+  
+  // Calculation menu
+  showCalculationMenu = false;
+  calculationResults: any = null;
+  selectedCalculationType: string = '';
+  
+  // All available data for filtering (before column filters)
+  allReliabilityData: ReliabilityData[] = [];
   
   // Form for creating/editing reliability data
   reliabilityForm: Partial<ReliabilityData> = {
@@ -74,7 +106,8 @@ export class Reliability implements OnInit {
 
   constructor(
     private reliabilityService: ReliabilityService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -124,40 +157,30 @@ export class Reliability implements OnInit {
     // Only add defined filter values
     if (this.filters.year) filterParams.year = this.filters.year;
     if (this.filters.month) filterParams.month = this.filters.month;
-    if (this.filters.search) filterParams.search = this.filters.search;
-    if (this.filters.minScore !== undefined) filterParams.minScore = this.filters.minScore;
-    if (this.filters.maxScore !== undefined) filterParams.maxScore = this.filters.maxScore;
+    if (this.filters.week !== undefined) filterParams.week = this.filters.week;
     
-    // Load all data for manager
-    const dataPromise = this.showAggregatedView 
-      ? this.reliabilityService.getAggregatedTeamPerformance(filterParams).toPromise()
-      : this.reliabilityService.getAllReliabilityData(filterParams).toPromise();
-    
-    Promise.all([
-      dataPromise,
-      this.reliabilityService.getPerformanceStats().toPromise(),
-      this.reliabilityService.getTopPerformers(5).toPromise(),
-      this.loadTeamMembers()
-    ]).then(([allData, stats, topPerformers]) => {
-      if (allData?.status === 'success' && allData.data?.reliabilityData) {
-        this.reliabilityData = allData.data.reliabilityData;
-        this.totalRecords = allData.total || 0;
-        this.totalPages = allData.pages || 1;
+    // Load flat list of reliability records
+    this.reliabilityService.getAllReliabilityData(filterParams).subscribe({
+      next: (allData) => {
+        if (allData?.status === 'success' && allData.data?.reliabilityData) {
+          let records = allData.data.reliabilityData as ReliabilityData[];
+          if (this.filters.week !== undefined) {
+            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+          }
+          // Store all records before column filtering
+          this.allReliabilityData = records;
+          // Apply column filters
+          this.applyColumnFilters();
+          this.totalRecords = allData.total || 0;
+          this.totalPages = allData.pages || 1;
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading manager data:', error);
+        this.errorMessage = 'Failed to load reliability data';
+        this.isLoading = false;
       }
-      
-      if (stats?.status === 'success' && stats.data?.stats) {
-        this.performanceStats = stats.data.stats;
-      }
-      
-      if (topPerformers?.status === 'success' && topPerformers.data?.topPerformers) {
-        this.topPerformers = topPerformers.data.topPerformers;
-      }
-      
-      this.isLoading = false;
-    }).catch(error => {
-      console.error('Error loading manager data:', error);
-      this.errorMessage = 'Failed to load reliability data';
-      this.isLoading = false;
     });
   }
 
@@ -172,7 +195,14 @@ export class Reliability implements OnInit {
     ).subscribe({
       next: (response) => {
         if (response.status === 'success' && response.data?.reliabilityData) {
-          this.reliabilityData = response.data.reliabilityData;
+          let records = response.data.reliabilityData as ReliabilityData[];
+          if (this.filters.week !== undefined) {
+            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+          }
+          // Store all records before column filtering
+          this.allReliabilityData = records;
+          // Apply column filters
+          this.applyColumnFilters();
           this.totalRecords = response.total || 0;
           this.totalPages = response.pages || 1;
         }
@@ -194,11 +224,9 @@ export class Reliability implements OnInit {
     }
   }
 
-  // Toggle between aggregated and detailed view
+  // Removed view toggle usage; keeping stub to avoid template errors if referenced
   toggleView() {
-    this.showAggregatedView = !this.showAggregatedView;
-    this.isInitialized = false; // Reset to reload data
-    this.loadInitialData();
+    this.showAggregatedView = false;
   }
 
   // Toggle filters visibility
@@ -206,10 +234,9 @@ export class Reliability implements OnInit {
     this.showFilters = !this.showFilters;
   }
 
-  // Select team member and load their detailed data
+  // Team member selection no longer used on simplified page
   selectTeamMember(teamMember: any) {
-    this.selectedTeamMember = teamMember;
-    this.loadTeamMemberDetails(teamMember.daId);
+    return;
   }
 
   // Go back to team overview
@@ -331,6 +358,7 @@ export class Reliability implements OnInit {
   // Filtering
   applyFilters() {
     this.currentPage = 1;
+    this.isInitialized = false;
     this.loadInitialData();
     this.showFilters = false; // Auto-close filters after applying
   }
@@ -338,7 +366,8 @@ export class Reliability implements OnInit {
   clearFilters() {
     this.filters = {
       year: new Date().getFullYear(),
-      month: undefined as any,
+      month: new Date().getMonth() + 1 as any,
+      week: undefined as any,
       search: '',
       minScore: undefined,
       maxScore: undefined
@@ -346,25 +375,42 @@ export class Reliability implements OnInit {
     this.applyFilters();
   }
 
+  // Show all records regardless of month
+  showAll() {
+    this.filters.month = undefined as any;
+    this.filters.week = undefined as any;
+    this.currentPage = 1;
+    this.isInitialized = false;
+    this.loadInitialData();
+  }
+
+  // Reset to current month view
+  showCurrentMonth() {
+    this.filters.month = new Date().getMonth() + 1;
+    this.filters.week = undefined as any;
+    this.currentPage = 1;
+    this.isInitialized = false;
+    this.loadInitialData();
+  }
+
+  // Compute ISO week number
+  getWeekNumber(date: string | Date): number {
+    const d = new Date(date);
+    const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return weekNo;
+  }
+
+  getWeekOptions(): number[] {
+    return Array.from({ length: 53 }, (_, i) => i + 1);
+  }
+
   // CRUD operations (Manager only)
   showCreateForm() {
-    this.isEditMode = false;
-    this.editingId = '';
-    this.reliabilityForm = {
-      workerId: '',
-      daId: '',
-      processname: '',
-      job_id: '',
-      totalTasks: 0,
-      totalOpportunities: 0,
-      totalSegmentsMatching: 0,
-      totalLabelMatching: 0,
-      totalDefects: 0,
-      overallReliabilityScore: 0,
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear()
-    };
-    this.showForm = true;
+    this.router.navigate(['/reliability/create']);
   }
 
   editReliabilityData(data: ReliabilityData) {
@@ -597,6 +643,383 @@ export class Reliability implements OnInit {
     }
     
     return pages;
+  }
+
+  // Column filter methods
+  getUniqueDaIds(): string[] {
+    const uniqueIds = [...new Set(this.allReliabilityData.map(r => r.daId).filter(id => id))];
+    return uniqueIds.sort();
+  }
+
+  getFilteredDaIds(): string[] {
+    if (!this.daIdSearchTerm) {
+      return this.getUniqueDaIds();
+    }
+    const searchLower = this.daIdSearchTerm.toLowerCase();
+    return this.getUniqueDaIds().filter(id => id.toLowerCase().includes(searchLower));
+  }
+
+  getUniqueProcesses(): string[] {
+    const uniqueProcesses = [...new Set(this.allReliabilityData.map(r => r.processname).filter((p): p is string => !!p))];
+    return uniqueProcesses.sort();
+  }
+
+  getFilteredProcesses(): string[] {
+    if (!this.processSearchTerm) {
+      return this.getUniqueProcesses();
+    }
+    const searchLower = this.processSearchTerm.toLowerCase();
+    return this.getUniqueProcesses().filter(p => p.toLowerCase().includes(searchLower));
+  }
+
+  toggleDaIdFilter(daId: string) {
+    const index = this.columnFilters.selectedDaIds.indexOf(daId);
+    if (index > -1) {
+      this.columnFilters.selectedDaIds.splice(index, 1);
+    } else {
+      this.columnFilters.selectedDaIds.push(daId);
+    }
+    this.applyColumnFilters();
+  }
+
+  toggleProcessFilter(process: string) {
+    const index = this.columnFilters.selectedProcesses.indexOf(process);
+    if (index > -1) {
+      this.columnFilters.selectedProcesses.splice(index, 1);
+    } else {
+      this.columnFilters.selectedProcesses.push(process);
+    }
+    this.applyColumnFilters();
+  }
+
+  isDaIdSelected(daId: string): boolean {
+    return this.columnFilters.selectedDaIds.includes(daId);
+  }
+
+  isProcessSelected(process: string): boolean {
+    return this.columnFilters.selectedProcesses.includes(process);
+  }
+
+  clearDaIdFilter() {
+    this.columnFilters.selectedDaIds = [];
+    this.applyColumnFilters();
+  }
+
+  clearProcessFilter() {
+    this.columnFilters.selectedProcesses = [];
+    this.applyColumnFilters();
+  }
+
+  applyDateFilter() {
+    this.showDateFilter = false;
+    this.applyColumnFilters();
+  }
+
+  clearDateFilter() {
+    this.columnFilters.dateFrom = undefined;
+    this.columnFilters.dateTo = undefined;
+    this.applyColumnFilters();
+  }
+
+  applyColumnFilters() {
+    let filtered = [...this.allReliabilityData];
+
+    // Filter by DA ID
+    if (this.columnFilters.selectedDaIds.length > 0) {
+      filtered = filtered.filter(r => this.columnFilters.selectedDaIds.includes(r.daId));
+    }
+
+    // Filter by Process
+    if (this.columnFilters.selectedProcesses.length > 0) {
+      filtered = filtered.filter(r => r.processname && this.columnFilters.selectedProcesses.includes(r.processname));
+    }
+
+    // Filter by Date Range
+    if (this.columnFilters.dateFrom) {
+      const fromDate = new Date(this.columnFilters.dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate >= fromDate;
+      });
+    }
+
+    if (this.columnFilters.dateTo) {
+      const toDate = new Date(this.columnFilters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate <= toDate;
+      });
+    }
+
+    this.reliabilityData = filtered;
+  }
+
+  hasActiveFilters(): boolean {
+    return this.columnFilters.selectedDaIds.length > 0 ||
+           this.columnFilters.selectedProcesses.length > 0 ||
+           !!this.columnFilters.dateFrom ||
+           !!this.columnFilters.dateTo;
+  }
+
+  clearAllColumnFilters() {
+    this.columnFilters = {
+      selectedDaIds: [],
+      selectedProcesses: [],
+      dateFrom: undefined,
+      dateTo: undefined
+    };
+    this.applyColumnFilters();
+  }
+
+  // Close all filter dropdowns
+  closeAllFilters() {
+    this.showDaIdFilter = false;
+    this.showProcessFilter = false;
+    this.showDateFilter = false;
+  }
+
+  // Calculate dropdown position based on button position
+  calculateDropdownPosition(event: MouseEvent, filterType: 'daId' | 'process' | 'date') {
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    // Get dropdown width estimates
+    const dropdownWidth = filterType === 'date' ? 280 : 200;
+    const dropdownHeight = filterType === 'date' ? 180 : 300; // Estimate
+    
+    // Get header row for positioning
+    const headerRow = button.closest('th');
+    const headerRect = headerRow ? headerRow.getBoundingClientRect() : null;
+    
+    let left: number;
+    let top: number;
+    
+    if (filterType === 'date') {
+      // For date popup, align to the right edge of the button (popup opens to the left)
+      left = rect.right + scrollLeft - dropdownWidth;
+      top = headerRect ? headerRect.bottom + scrollTop + 5 : rect.bottom + scrollTop + 5;
+      
+      // If popup would go off screen to the left, align with button's left edge
+      if (left < scrollLeft + 10) {
+        left = rect.left + scrollLeft;
+      }
+    } else {
+      // For other filters, try right side first
+      left = rect.right + scrollLeft + 10;
+      top = headerRect ? headerRect.bottom + scrollTop + 5 : rect.bottom + scrollTop + 5;
+      
+      // If no space to the right, position to the left
+      if (left + dropdownWidth > window.innerWidth + scrollLeft - 20) {
+        left = rect.left + scrollLeft - dropdownWidth - 10;
+        // If still off screen, align with button
+        if (left < scrollLeft + 10) {
+          left = rect.left + scrollLeft;
+        }
+      }
+    }
+    
+    // Ensure dropdown doesn't go below viewport
+    if (top + dropdownHeight > window.innerHeight + scrollTop - 20) {
+      top = window.innerHeight + scrollTop - dropdownHeight - 20;
+    }
+    
+    // Ensure dropdown doesn't go above viewport
+    if (top < scrollTop + 10) {
+      top = scrollTop + 10;
+    }
+    
+    // Ensure dropdown doesn't go off screen horizontally
+    if (left + dropdownWidth > window.innerWidth + scrollLeft - 10) {
+      left = window.innerWidth + scrollLeft - dropdownWidth - 10;
+    }
+    if (left < scrollLeft + 10) {
+      left = scrollLeft + 10;
+    }
+    
+    const position = {
+      top: top,
+      left: left
+    };
+    
+    if (filterType === 'daId') {
+      this.daIdFilterPosition = position;
+    } else if (filterType === 'process') {
+      this.processFilterPosition = position;
+    } else {
+      this.dateFilterPosition = position;
+    }
+  }
+
+  toggleDaIdFilterMenu(event: MouseEvent) {
+    this.calculateDropdownPosition(event, 'daId');
+    this.showDaIdFilter = !this.showDaIdFilter;
+    this.showProcessFilter = false;
+    this.showDateFilter = false;
+  }
+
+  toggleProcessFilterMenu(event: MouseEvent) {
+    this.calculateDropdownPosition(event, 'process');
+    this.showProcessFilter = !this.showProcessFilter;
+    this.showDaIdFilter = false;
+    this.showDateFilter = false;
+  }
+
+  toggleDateFilterMenu(event: MouseEvent) {
+    this.calculateDropdownPosition(event, 'date');
+    this.showDateFilter = !this.showDateFilter;
+    this.showDaIdFilter = false;
+    this.showProcessFilter = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // Close filters if clicking outside filter elements
+    if (!target.closest('.filter-dropdown') && !target.closest('.filter-button')) {
+      this.closeAllFilters();
+    }
+    // Close calculation menu if clicking outside
+    if (!target.closest('.calculation-menu') && !target.closest('.calculation-button')) {
+      this.showCalculationMenu = false;
+    }
+  }
+
+  // Calculation methods
+  toggleCalculationMenu() {
+    this.showCalculationMenu = !this.showCalculationMenu;
+  }
+
+  calculateStatistics(type: string) {
+    if (this.reliabilityData.length === 0) {
+      this.calculationResults = {
+        error: 'No data available for calculation'
+      };
+      return;
+    }
+
+    this.selectedCalculationType = type;
+    let result: any = { type };
+
+    switch (type) {
+      case 'average':
+        result = this.calculateAverage();
+        break;
+      case 'min':
+        result = this.calculateMin();
+        break;
+      case 'max':
+        result = this.calculateMax();
+        break;
+      case 'sum':
+        result = this.calculateSum();
+        break;
+      case 'count':
+        result = this.calculateCount();
+        break;
+      case 'median':
+        result = this.calculateMedian();
+        break;
+      default:
+        result = { error: 'Unknown calculation type' };
+    }
+
+    this.calculationResults = result;
+    this.showCalculationMenu = false;
+  }
+
+  calculateAverage() {
+    const scores = this.reliabilityData.map(r => r.overallReliabilityScore);
+    const tasks = this.reliabilityData.map(r => r.totalTasks);
+    const defects = this.reliabilityData.map(r => r.totalDefects);
+    
+    return {
+      type: 'Average',
+      overallReliabilityScore: scores.reduce((a, b) => a + b, 0) / scores.length,
+      totalTasks: tasks.reduce((a, b) => a + b, 0) / tasks.length,
+      totalDefects: defects.reduce((a, b) => a + b, 0) / defects.length,
+      recordCount: this.reliabilityData.length
+    };
+  }
+
+  calculateMin() {
+    const scores = this.reliabilityData.map(r => r.overallReliabilityScore);
+    const tasks = this.reliabilityData.map(r => r.totalTasks);
+    const minScore = Math.min(...scores);
+    const minTaskRecord = this.reliabilityData.find(r => r.overallReliabilityScore === minScore);
+    
+    return {
+      type: 'Minimum',
+      overallReliabilityScore: minScore,
+      totalTasks: Math.min(...tasks),
+      record: minTaskRecord,
+      recordCount: this.reliabilityData.length
+    };
+  }
+
+  calculateMax() {
+    const scores = this.reliabilityData.map(r => r.overallReliabilityScore);
+    const tasks = this.reliabilityData.map(r => r.totalTasks);
+    const maxScore = Math.max(...scores);
+    const maxTaskRecord = this.reliabilityData.find(r => r.overallReliabilityScore === maxScore);
+    
+    return {
+      type: 'Maximum',
+      overallReliabilityScore: maxScore,
+      totalTasks: Math.max(...tasks),
+      record: maxTaskRecord,
+      recordCount: this.reliabilityData.length
+    };
+  }
+
+  calculateSum() {
+    const tasks = this.reliabilityData.map(r => r.totalTasks);
+    const defects = this.reliabilityData.map(r => r.totalDefects);
+    const opportunities = this.reliabilityData.map(r => r.totalOpportunities);
+    
+    return {
+      type: 'Sum',
+      totalTasks: tasks.reduce((a, b) => a + b, 0),
+      totalDefects: defects.reduce((a, b) => a + b, 0),
+      totalOpportunities: opportunities.reduce((a, b) => a + b, 0),
+      recordCount: this.reliabilityData.length
+    };
+  }
+
+  calculateCount() {
+    const uniqueDaIds = new Set(this.reliabilityData.map(r => r.daId)).size;
+    const uniqueProcesses = new Set(this.reliabilityData.map(r => r.processname)).size;
+    
+    return {
+      type: 'Count',
+      totalRecords: this.reliabilityData.length,
+      uniqueDaIds: uniqueDaIds,
+      uniqueProcesses: uniqueProcesses
+    };
+  }
+
+  calculateMedian() {
+    const scores = [...this.reliabilityData.map(r => r.overallReliabilityScore)].sort((a, b) => a - b);
+    const mid = Math.floor(scores.length / 2);
+    const median = scores.length % 2 !== 0 
+      ? scores[mid] 
+      : (scores[mid - 1] + scores[mid]) / 2;
+    
+    return {
+      type: 'Median',
+      overallReliabilityScore: median,
+      recordCount: this.reliabilityData.length
+    };
+  }
+
+  closeCalculationResults() {
+    this.calculationResults = null;
+    this.selectedCalculationType = '';
   }
 
 }
