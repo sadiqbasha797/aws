@@ -1,0 +1,105 @@
+<div class="audit-doc-create-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-file-alt"></i>
+      {{ isEditMode ? 'Edit' : 'Add' }} Audit Document
+    </h1>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Form -->
+  <div class="audit-doc-form">
+    <form (ngSubmit)="saveAuditDoc()" class="form-content">
+      <div class="form-section">
+        <h2>Document Information</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="document">
+              Document {{ isEditMode ? '(Optional - leave empty to keep current file)' : '*' }}
+            </label>
+            <div class="file-upload">
+              <input 
+                type="file" 
+                id="document"
+                (change)="onFileSelected($event)"
+                name="document" 
+                [required]="!isEditMode"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp"
+                class="file-input">
+              
+              <label for="document" class="file-input-label">
+                <i class="fas fa-upload"></i>
+                {{ selectedFile ? 'Change File' : 'Choose File' }}
+              </label>
+              
+              <p class="file-info">
+                Upload document file (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, Images)
+              </p>
+              
+              <p *ngIf="selectedFile" class="selected-file">
+                <i class="fas fa-check-circle"></i>
+                Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+              </p>
+              
+              <p *ngIf="isEditMode && existingAuditDoc && !selectedFile" class="current-file">
+                <i class="fas fa-file"></i>
+                Current: {{ existingAuditDoc.document.originalName }}
+              </p>
+              
+              <p *ngIf="isEditMode && !selectedFile" class="form-hint">
+                Leave empty to keep the current file
+              </p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="date">Date *</label>
+            <input 
+              type="date" 
+              id="date"
+              [(ngModel)]="auditDocForm.date" 
+              name="date" 
+              required 
+              class="form-control" />
+            <p class="form-hint">
+              Select the date for this audit document
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="loading || (!isEditMode && !auditDocForm.file) || !auditDocForm.date">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Audit Document' : 'Create Audit Document') }}
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary"
+          (click)="cancel()"
+          [disabled]="loading">
+          <i class="fas fa-times"></i>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

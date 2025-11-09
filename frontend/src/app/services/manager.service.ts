@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 
 export interface Manager {
   id?: string;
@@ -31,15 +32,30 @@ export interface ManagerResponse {
 export class ManagerService {
   private baseUrl = 'http://localhost:7000/api/managers';
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) { }
+
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
 
   // Get current manager profile
   getMe(): Observable<ManagerResponse> {
-    return this.http.get<ManagerResponse>(`${this.baseUrl}/me`);
+    return this.http.get<ManagerResponse>(`${this.baseUrl}/me`, {
+      headers: this.getHeaders()
+    });
   }
 
   updateMe(data: Partial<Manager>): Observable<ManagerResponse> {
-    return this.http.patch<ManagerResponse>(`${this.baseUrl}/me`, data);
+    return this.http.patch<ManagerResponse>(`${this.baseUrl}/me`, data, {
+      headers: this.getHeaders()
+    });
   }
 
   // Manager management

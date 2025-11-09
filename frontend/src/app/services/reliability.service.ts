@@ -44,10 +44,18 @@ export interface PerformanceStats {
   avgDefectRate: number;
 }
 
+export interface BulkUploadResults {
+  total: number;
+  success: number;
+  failed: number;
+  successRecords?: any[];
+  failedRecords?: Array<{ index: number; record: any; error: string }>;
+}
+
 export interface ReliabilityResponse {
   status: string;
   message?: string;
-  results?: number;
+  results?: number | BulkUploadResults;
   total?: number;
   page?: number;
   pages?: number;
@@ -193,6 +201,12 @@ export class ReliabilityService {
 
   getUserPerformanceHistory(daId: string, page: number = 1, limit: number = 12): Observable<ReliabilityResponse> {
     return this.http.get<ReliabilityResponse>(`${this.baseUrl}/user/${daId}/history?page=${page}&limit=${limit}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  bulkCreateReliabilityData(data: any[]): Observable<ReliabilityResponse> {
+    return this.http.post<ReliabilityResponse>(`${this.baseUrl}/bulk`, { data }, {
       headers: this.getHeaders()
     });
   }

@@ -48,23 +48,75 @@
     </div>
   </div>
 
-  <!-- Simplified Records Table: current month by default with Week filter -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+  <!-- Calendar Navigation: Year View (Weeks) -->
+  <div *ngIf="calendarView === 'year'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">
-        <i class="fas fa-table text-orange-500 mr-2"></i>
-        Productivity Records - {{ filters.month ? 'Current Month' : 'All' }}
-      </h3>
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600">Week</label>
-          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
-            <option [ngValue]="undefined">All</option>
-            <option *ngFor="let w of weekOptions" [ngValue]="w">{{ w }}</option>
-          </select>
-        </div>
-        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
-        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
+      <div class="flex items-center space-x-3">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-calendar-week text-orange-500 mr-2"></i>
+          Select Week - {{ selectedYear }}
+        </h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+          <i class="fas fa-list"></i>
+          <span>Show All</span>
+        </button>
+        <button (click)="selectedYear = selectedYear - 1; loadWeeksForYear()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="px-3 py-1 text-sm font-medium text-gray-700">{{ selectedYear }}</span>
+        <button (click)="selectedYear = selectedYear + 1; loadWeeksForYear()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+        <button 
+          *ngFor="let week of weeksInSelectedYear" 
+          (click)="selectWeek(week)"
+          class="group relative bg-white border-2 border-gray-200 rounded-xl p-4 text-center transition-all duration-300 hover:border-orange-400 hover:shadow-lg hover:scale-105 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 cursor-pointer overflow-hidden">
+          <!-- Background decoration -->
+          <div class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          <!-- Week number badge -->
+          <div class="relative z-10">
+            <div class="inline-flex items-center justify-center w-12 h-12 mb-2 rounded-full bg-gray-900 text-white font-bold text-lg shadow-md group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-orange-600 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+              {{ week }}
+            </div>
+            <div class="text-xs font-semibold text-gray-600 uppercase tracking-wider group-hover:text-orange-600 transition-colors duration-300">
+              Week
+            </div>
+          </div>
+          
+          <!-- Hover indicator -->
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+        </button>
+      </div>
+      <div *ngIf="weeksInSelectedYear.length === 0" class="text-center py-8 text-gray-500">
+        No weeks available for this year
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Navigation: Week View (Productivity Table) -->
+  <div *ngIf="calendarView === 'week'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <button (click)="goBackToYear()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>Back
+        </button>
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-table text-orange-500 mr-2"></i>
+          Productivity Records - Week {{ selectedWeek }} ({{ selectedYear }})
+        </h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+          <i class="fas fa-list"></i>
+          <span>Show All</span>
+        </button>
       </div>
     </div>
     <div class="overflow-x-auto table-container">
@@ -153,6 +205,7 @@
                 </div>
               </div>
             </th>
+            <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -161,13 +214,31 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm font-bold" [class]="getGradeColor(data.productivityPercentage)">{{ data.productivityPercentage | number:'1.1-1' }}%</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getWeekNumber(data.createdAt!) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getWeekFromData(data) }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(data.createdAt!) }}</td>
+            <td *ngIf="userRole === 'manager'" class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div class="flex items-center space-x-2">
+                <button 
+                  (click)="editProductivityData(data)" 
+                  class="text-blue-600 hover:text-blue-900 transition-colors duration-200 flex items-center space-x-1"
+                  title="Edit">
+                  <i class="fas fa-edit"></i>
+                  <span>Edit</span>
+                </button>
+                <button 
+                  (click)="deleteProductivityData(data._id!)" 
+                  class="text-red-600 hover:text-red-900 transition-colors duration-200 flex items-center space-x-1"
+                  title="Delete">
+                  <i class="fas fa-trash"></i>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
-            <td [attr.colspan]="userRole === 'manager' ? 4 : 3" class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+            <td [attr.colspan]="userRole === 'manager' ? 5 : 4" class="px-6 py-3 bg-gray-50 border-t border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="text-sm text-gray-600">
                   Showing <span class="font-medium">{{ productivityData.length }}</span> record(s)
@@ -228,9 +299,209 @@
         </tfoot>
       </table>
     </div>
-    <div *ngIf="productivityData.length === 0 && !isLoading" class="text-center py-12">
+    <div *ngIf="calendarView === 'week' && productivityData.length === 0 && !isLoading" class="text-center py-12">
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">No productivity data found for Week {{ selectedWeek }}</h3>
+      <p class="text-gray-600">No records available for this week.</p>
+    </div>
+  </div>
+
+  <!-- Show All Data View -->
+  <div *ngIf="calendarView === 'all'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <button (click)="goBackToCalendar()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>Back to Calendar
+        </button>
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-table text-orange-500 mr-2"></i>
+          All Productivity Records
+        </h3>
+      </div>
+    </div>
+    
+    <div class="overflow-x-auto table-container">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+              <div class="flex items-center justify-between">
+                <span>Associate</span>
+                <button 
+                  (click)="toggleAssociateFilterMenu($event)"
+                  class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                  <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                  <span *ngIf="columnFilters.selectedAssociates.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+              </div>
+              <!-- Associate Filter Dropdown -->
+              <div *ngIf="showAssociateFilter" 
+                   class="filter-dropdown border border-gray-200 rounded-lg max-h-64 overflow-y-auto min-w-[200px]"
+                   [style.top.px]="associateFilterPosition.top"
+                   [style.left.px]="associateFilterPosition.left">
+                <div class="p-2 border-b border-gray-200">
+                  <input 
+                    type="text" 
+                    placeholder="Search Associate..." 
+                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    [(ngModel)]="associateSearchTerm">
+                </div>
+                <div class="p-2 max-h-48 overflow-y-auto">
+                  <div *ngFor="let associate of getFilteredAssociates()" 
+                       class="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"
+                       (click)="toggleAssociateFilter(associate)">
+                    <input 
+                      type="checkbox" 
+                      [checked]="isAssociateSelected(associate)"
+                      (change)="toggleAssociateFilter(associate)"
+                      class="mr-2 cursor-pointer"
+                      (click)="$event.stopPropagation()">
+                    <span class="text-sm text-gray-700">{{ associate }}</span>
+                  </div>
+                  <div *ngIf="getFilteredAssociates().length === 0" class="text-sm text-gray-500 px-2 py-1">No associates found</div>
+                </div>
+                <div class="p-2 border-t border-gray-200 flex justify-between">
+                  <button (click)="clearAssociateFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                  <button (click)="showAssociateFilter = false" class="text-xs text-orange-600 hover:text-orange-800">Done</button>
+                </div>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Productivity</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+              <div class="flex items-center justify-between">
+                <span>Date</span>
+                <button 
+                  (click)="toggleDateFilterMenu($event)"
+                  class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                  <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                  <span *ngIf="columnFilters.dateFrom || columnFilters.dateTo" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+              </div>
+              <!-- Date Range Filter Popup -->
+              <div *ngIf="showDateFilter" 
+                   class="filter-dropdown border border-gray-200 rounded-lg p-4 min-w-[280px]"
+                   [style.top.px]="dateFilterPosition.top"
+                   [style.left.px]="dateFilterPosition.left">
+                <h4 class="text-sm font-semibold text-gray-700 mb-3">Filter by Date Range</h4>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">From Date</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="columnFilters.dateFrom"
+                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">To Date</label>
+                    <input 
+                      type="date" 
+                      [(ngModel)]="columnFilters.dateTo"
+                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                  </div>
+                </div>
+                <div class="flex justify-between mt-4 pt-3 border-t border-gray-200">
+                  <button (click)="clearDateFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                  <button (click)="applyDateFilter()" class="text-xs text-orange-600 hover:text-orange-800">Apply</button>
+                </div>
+              </div>
+            </th>
+            <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let data of productivityData" class="hover:bg-gray-50 transition-colors duration-150">
+            <td *ngIf="userRole === 'manager'" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ data.associateName }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-bold" [class]="getGradeColor(data.productivityPercentage)">{{ data.productivityPercentage | number:'1.1-1' }}%</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getWeekFromData(data) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(data.createdAt!) }}</td>
+            <td *ngIf="userRole === 'manager'" class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div class="flex items-center space-x-2">
+                <button 
+                  (click)="editProductivityData(data)" 
+                  class="text-blue-600 hover:text-blue-900 transition-colors duration-200 flex items-center space-x-1"
+                  title="Edit">
+                  <i class="fas fa-edit"></i>
+                  <span>Edit</span>
+                </button>
+                <button 
+                  (click)="deleteProductivityData(data._id!)" 
+                  class="text-red-600 hover:text-red-900 transition-colors duration-200 flex items-center space-x-1"
+                  title="Delete">
+                  <i class="fas fa-trash"></i>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td [attr.colspan]="userRole === 'manager' ? 5 : 4" class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                  Showing <span class="font-medium">{{ productivityData.length }}</span> record(s)
+                </div>
+                <div class="relative">
+                  <button 
+                    (click)="toggleCalculationMenu()"
+                    class="calculation-button bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                    <i class="fas fa-calculator"></i>
+                    <span class="text-sm font-medium">Calculations</span>
+                  </button>
+                  <!-- Calculation Menu Dropdown -->
+                  <div *ngIf="showCalculationMenu" 
+                       class="calculation-menu absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                    <div class="py-2">
+                      <button 
+                        (click)="calculateStatistics('average')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-chart-line text-blue-500"></i>
+                        <span>Average</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('min')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-arrow-down text-red-500"></i>
+                        <span>Minimum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('max')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-arrow-up text-green-500"></i>
+                        <span>Maximum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('sum')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-plus-circle text-purple-500"></i>
+                        <span>Sum</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('count')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-list-ol text-orange-500"></i>
+                        <span>Count</span>
+                      </button>
+                      <button 
+                        (click)="calculateStatistics('median')"
+                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+                        <i class="fas fa-chart-bar text-indigo-500"></i>
+                        <span>Median</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div *ngIf="calendarView === 'all' && productivityData.length === 0 && !isLoading" class="text-center py-12">
       <h3 class="text-lg font-semibold text-gray-900 mb-2">No productivity data found</h3>
-      <p class="text-gray-600">Data will appear here once available.</p>
+      <p class="text-gray-600">No records available.</p>
     </div>
     
     <!-- Calculation Results Display -->
@@ -807,7 +1078,7 @@
   </div>
 
   <!-- Pagination -->
-  <div *ngIf="totalPages > 1" class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+  <div *ngIf="totalPages > 1 && (calendarView === 'all' || calendarView === 'week')" class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-xl shadow-sm border border-gray-200 mb-6">
     <div class="flex flex-1 justify-between sm:hidden">
       <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage <= 1" 
               class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -859,9 +1130,8 @@
   <div *ngIf="isLoading" class="flex justify-center items-center py-12">
     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
     <span class="ml-2 text-gray-600">Loading...</span>
-  </div>  <!-- Cre
-ate/Edit Form Modal -->
-  <div *ngIf="false" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  </div>  <!-- Create/Edit Form Modal -->
+  <div *ngIf="showForm && userRole === 'manager'" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
       <div class="mt-3">
         <div class="flex items-center justify-between mb-4">

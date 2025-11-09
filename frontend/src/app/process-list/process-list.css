@@ -1,0 +1,32 @@
+/* Process List Component Styles */
+
+/* Form Modal */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+}
+
+/* Table Row Hover */
+.table-row-hover:hover {
+  background-color: #f9fafb;
+}
+
+/* Loading Animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Match theme colors */
+.btn-primary {
+  background-color: #f97316; /* orange-500 */
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #ea580c; /* orange-600 */
+}
+

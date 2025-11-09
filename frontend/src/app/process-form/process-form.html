@@ -1,0 +1,65 @@
+<div class="process-form-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-cogs"></i>
+      {{ isEditMode ? 'Edit' : 'Add' }} Process
+    </h1>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Form -->
+  <div class="process-form">
+    <form (ngSubmit)="saveProcess()" class="form-content">
+      <div class="form-section">
+        <h2>Process Information</h2>
+        
+        <div class="form-group">
+          <label for="name">Process Name *</label>
+          <input 
+            type="text" 
+            id="name"
+            [(ngModel)]="processForm.name" 
+            name="name"
+            class="form-control"
+            placeholder="Enter process name"
+            required>
+          <p class="form-hint">
+            Enter a unique name for this process
+          </p>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="loading || !processForm.name.trim()">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Process' : 'Create Process') }}
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary"
+          (click)="cancel()"
+          [disabled]="loading">
+          <i class="fas fa-times"></i>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

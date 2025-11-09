@@ -32,3 +32,13 @@
     width: 14rem; /* w-56 */
   }
 }
+
+/* Hide scrollbar but keep scrolling functionality */
+.sidebar-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

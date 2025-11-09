@@ -1,0 +1,5 @@
+/* Additional custom styles if needed */
+.form-control:focus {
+  outline: none;
+}
+

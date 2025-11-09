@@ -271,3 +271,22 @@
   position: relative;
   overflow: visible;
 }
+
+/* Week Card Styles */
+.week-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.week-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Week number badge animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px -1px rgba(249, 115, 22, 0.5);
+  }
+}

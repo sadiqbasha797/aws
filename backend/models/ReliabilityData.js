@@ -4,7 +4,6 @@ const reliabilityDataSchema = new mongoose.Schema({
   workerId: {
     type: String,
     required: [true, 'Worker ID is required'],
-    unique: true,
     trim: true,
     match: [/^[0-9]+$/, 'Worker ID should contain only numbers']
   },
@@ -32,7 +31,6 @@ const reliabilityDataSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Job ID is required'],
     trim: true,
-    unique: true,
     match: [/^[a-zA-Z0-9_-]+$/, 'Job ID should contain only alphanumeric characters, underscores, and hyphens']
   },
   totalTasks: {
@@ -131,20 +129,23 @@ reliabilityDataSchema.virtual('calculatedDefectRate').get(function() {
   return ((this.totalDefects / this.totalOpportunities) * 100).toFixed(2);
 });
 
-// Index for better query performance
-reliabilityDataSchema.index({ workerId: 1 });
+// Index for better query performance (non-unique indexes)
 reliabilityDataSchema.index({ daId: 1 });
 reliabilityDataSchema.index({ managerId: 1 });
 reliabilityDataSchema.index({ processname: 1 });
-reliabilityDataSchema.index({ job_id: 1 });
 reliabilityDataSchema.index({ overallReliabilityScore: -1 });
 reliabilityDataSchema.index({ year: -1, month: -1 });
 reliabilityDataSchema.index({ isActive: 1 });
+// Note: workerId and job_id are NOT unique - they can have duplicates
+reliabilityDataSchema.index({ workerId: 1 }, { unique: false });
+reliabilityDataSchema.index({ job_id: 1 }, { unique: false });
 
-// Compound indexes for common queries
+// Compound indexes for common queries (non-unique)
 reliabilityDataSchema.index({ managerId: 1, isActive: 1 });
 reliabilityDataSchema.index({ daId: 1, isActive: 1 });
 reliabilityDataSchema.index({ year: 1, month: 1, managerId: 1 });
+// Compound index for querying (NOT unique - allows multiple records)
+reliabilityDataSchema.index({ workerId: 1, job_id: 1, year: 1, month: 1 }, { unique: false });
 
 // Pre-save middleware to calculate and update accuracy fields
 reliabilityDataSchema.pre('save', function(next) {

@@ -1,5 +1,6 @@
 const ReliabilityData = require('../models/ReliabilityData');
 const TeamMember = require('../models/TeamMember');
+const { sendReliabilityNotificationEmail } = require('../utils/email');
 
 // Get all reliability data (Manager only)
 const getAllReliabilityData = async (req, res) => {
@@ -225,6 +226,12 @@ const createReliabilityData = async (req, res) => {
       period: period || 'monthly',
       month: month || new Date().getMonth() + 1,
       year: year || new Date().getFullYear()
+    });
+
+    // Send email notification to team member asynchronously
+    // Don't block the response if email fails
+    sendReliabilityNotificationEmail(teamMember, reliabilityData).catch(error => {
+      console.error('Error sending reliability notification email:', error);
     });
 
     res.status(201).json({
@@ -588,6 +595,139 @@ const getPerformanceByPeriod = async (req, res) => {
   }
 };
 
+// Bulk create reliability data
+const bulkCreateReliabilityData = async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid data. Expected an array of reliability data records.'
+      });
+    }
+
+    const managerId = req.user.managerId || req.user._id.toString();
+    const results = {
+      success: [],
+      failed: [],
+      errors: []
+    };
+
+    // Map to store team member email -> reliability data array for email notifications
+    const teamMemberReliabilityMap = new Map();
+
+    // Process each record
+    for (let i = 0; i < data.length; i++) {
+      const record = data[i];
+      
+      try {
+        // Validate required fields
+        if (!record.workerId || !record.daId || !record.processname || !record.job_id) {
+          results.failed.push({ index: i, record, error: 'Missing required fields' });
+          continue;
+        }
+
+        // Check if team member with daId exists (case-insensitive search)
+        const teamMember = await TeamMember.findOne({ 
+          da_id: { $regex: new RegExp(`^${record.daId}$`, 'i') }
+        });
+        
+        if (!teamMember) {
+          results.failed.push({ 
+            index: i, 
+            record, 
+            error: `Team member with DA ID '${record.daId}' does not exist` 
+          });
+          continue;
+        }
+
+        // No duplicate check - allow multiple records for the same worker, job, and period
+
+        // Create the record
+        const reliabilityData = await ReliabilityData.create({
+          workerId: record.workerId,
+          daId: record.daId,
+          managerId: record.managerId || managerId,
+          processname: record.processname,
+          job_id: record.job_id,
+          totalTasks: record.totalTasks || 0,
+          totalOpportunities: record.totalOpportunities || 0,
+          totalSegmentsMatching: record.totalSegmentsMatching || 0,
+          totalLabelMatching: record.totalLabelMatching || 0,
+          totalDefects: record.totalDefects || 0,
+          overallReliabilityScore: record.overallReliabilityScore || 0,
+          period: record.period || 'monthly',
+          month: record.month || new Date().getMonth() + 1,
+          year: record.year || new Date().getFullYear()
+        });
+
+        results.success.push(reliabilityData);
+        
+        // Store reliability data for email notification (grouped by team member)
+        // For bulk uploads, send one email per record to the team member
+        // Store team member reference with each reliability data
+        const teamMemberEmail = teamMember.email;
+        if (!teamMemberReliabilityMap.has(teamMemberEmail)) {
+          teamMemberReliabilityMap.set(teamMemberEmail, {
+            teamMember: teamMember,
+            reliabilityDataArray: []
+          });
+        }
+        teamMemberReliabilityMap.get(teamMemberEmail).reliabilityDataArray.push(reliabilityData);
+      } catch (error) {
+        console.error(`Error processing record ${i}:`, error);
+        results.failed.push({ 
+          index: i, 
+          record, 
+          error: error.message || 'Unknown error' 
+        });
+      }
+    }
+
+    // Send email notifications to team members
+    // For bulk uploads, send one email per reliability data record
+    // Send emails asynchronously so they don't block the response
+    if (teamMemberReliabilityMap.size > 0) {
+      Promise.all(
+        Array.from(teamMemberReliabilityMap.values()).flatMap(({ teamMember, reliabilityDataArray }) => {
+          // Send individual email for each reliability data record
+          return reliabilityDataArray.map(reliabilityData => 
+            sendReliabilityNotificationEmail(teamMember, reliabilityData).catch(error => {
+              console.error(`Failed to send email to ${teamMember.email}:`, error);
+            })
+          );
+        })
+      ).catch(error => {
+        console.error('Error sending reliability notification emails:', error);
+      });
+    }
+
+    // Determine response status
+    const allFailed = results.success.length === 0;
+    const allSuccess = results.failed.length === 0;
+    const statusCode = allFailed ? 400 : (allSuccess ? 201 : 207); // 207 = Multi-Status
+
+    res.status(statusCode).json({
+      status: allSuccess ? 'success' : (allFailed ? 'error' : 'partial'),
+      message: `Processed ${data.length} records. ${results.success.length} succeeded, ${results.failed.length} failed.`,
+      results: {
+        total: data.length,
+        success: results.success.length,
+        failed: results.failed.length,
+        successRecords: results.success,
+        failedRecords: results.failed
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk create:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Something went wrong while processing bulk upload!'
+    });
+  }
+};
+
 module.exports = {
   getAllReliabilityData,
   getReliabilityData,
@@ -599,5 +739,6 @@ module.exports = {
   getTopPerformers,
   getPerformanceStats,
   getUserPerformanceHistory,
-  getPerformanceByPeriod
+  getPerformanceByPeriod,
+  bulkCreateReliabilityData
 };

@@ -1,5 +1,6 @@
 const ProductivityData = require('../models/ProductivityData');
 const TeamMember = require('../models/TeamMember');
+const { sendProductivityNotificationEmail } = require('../utils/email');
 
 // Get all productivity data (Manager only)
 const getAllProductivityData = async (req, res) => {
@@ -180,24 +181,53 @@ const createProductivityData = async (req, res) => {
       notes
     } = req.body;
 
-    // Check if team member exists
-    const teamMember = await TeamMember.findOne({ name: associateName });
+    // Check if team member exists by name or da_id (case-insensitive)
+    const associateNameUpper = associateName.toUpperCase();
+    const teamMember = await TeamMember.findOne({
+      $or: [
+        { name: { $regex: new RegExp(`^${associateName}$`, 'i') } },
+        { da_id: { $regex: new RegExp(`^${associateNameUpper}$`, 'i') } }
+      ],
+      isActive: true
+    });
+    
     if (!teamMember) {
       return res.status(400).json({
         status: 'error',
-        message: 'Team member with this name does not exist'
+        message: 'Team member with this name or DA ID does not exist'
+      });
+    }
+    
+    // Use the actual name from the database
+    const actualAssociateName = teamMember.name;
+
+    // Normalize month name (convert abbreviated to full name)
+    const normalizedMonth = normalizeMonth(month);
+    if (!normalizedMonth || !['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].includes(normalizedMonth)) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Invalid month: '${month}'. Month must be a valid month name (e.g., January, Feb, Jan, etc.)`
       });
     }
 
-    // Extract week number from week string
-    const weekNumber = week ? parseInt(week.replace('Week ', '')) : null;
+    // Normalize week format
+    const normalizedWeek = normalizeWeek(week);
+    if (!normalizedWeek || !normalizedWeek.match(/^Week \d+$/)) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Invalid week format: '${week}'. Week must be a number between 1-53 or in format like 'Week 1', 'week1', etc.`
+      });
+    }
+    
+    // Extract week number from normalized week string
+    const weekNumber = normalizedWeek ? parseInt(normalizedWeek.replace('Week ', '')) : null;
 
-    // Check if productivity data already exists for this associate and week
+    // Check if productivity data already exists for this associate and week (use normalized week)
     const existingData = await ProductivityData.findOne({
-      associateName,
+      associateName: actualAssociateName,
       teamManager: teamManager || req.user.managerId || req.user._id.toString(),
       year: year || new Date().getFullYear(),
-      week: week || `Week ${new Date().getWeek()}`,
+      week: normalizedWeek || `Week ${new Date().getWeek()}`,
       isActive: true
     });
 
@@ -210,13 +240,19 @@ const createProductivityData = async (req, res) => {
 
     const productivityData = await ProductivityData.create({
       teamManager: teamManager || req.user.managerId || req.user._id.toString(),
-      associateName,
-      month: month || new Date().toLocaleString('default', { month: 'long' }),
-      week: week || `Week ${new Date().getWeek()}`,
+      associateName: actualAssociateName,
+      month: normalizedMonth || new Date().toLocaleString('default', { month: 'long' }),
+      week: normalizedWeek || `Week ${new Date().getWeek()}`,
       productivityPercentage,
       year: year || new Date().getFullYear(),
       weekNumber: weekNumber || new Date().getWeek(),
       notes
+    });
+
+    // Send email notification to team member asynchronously
+    // Don't block the response if email fails
+    sendProductivityNotificationEmail(teamMember, [productivityData]).catch(error => {
+      console.error('Error sending productivity notification email:', error);
     });
 
     res.status(201).json({
@@ -552,8 +588,16 @@ const getTeamMemberProductivityHistory = async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    // Check if team member exists
-    const teamMember = await TeamMember.findOne({ name: associateName });
+    // Check if team member exists by name or da_id (case-insensitive)
+    const associateNameUpper = associateName.toUpperCase();
+    const teamMember = await TeamMember.findOne({
+      $or: [
+        { name: { $regex: new RegExp(`^${associateName}$`, 'i') } },
+        { da_id: { $regex: new RegExp(`^${associateNameUpper}$`, 'i') } }
+      ],
+      isActive: true
+    });
+    
     if (!teamMember) {
       return res.status(404).json({
         status: 'error',
@@ -685,6 +729,274 @@ const getPerformanceTrends = async (req, res) => {
   }
 };
 
+// Helper function to normalize month names
+const normalizeMonth = (month) => {
+  if (!month) return null;
+  
+  const monthStr = String(month).trim();
+  
+  // First check if it's a number (1-12)
+  const monthNum = parseInt(monthStr);
+  if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return monthNames[monthNum - 1];
+  }
+  
+  // Then check text formats
+  const monthMap = {
+    'jan': 'January',
+    'feb': 'February',
+    'mar': 'March',
+    'apr': 'April',
+    'may': 'May',
+    'jun': 'June',
+    'jul': 'July',
+    'aug': 'August',
+    'sep': 'September',
+    'oct': 'October',
+    'nov': 'November',
+    'dec': 'December',
+    'january': 'January',
+    'february': 'February',
+    'march': 'March',
+    'april': 'April',
+    'may': 'May',
+    'june': 'June',
+    'july': 'July',
+    'august': 'August',
+    'september': 'September',
+    'october': 'October',
+    'november': 'November',
+    'december': 'December'
+  };
+  
+  const normalized = monthMap[monthStr.toLowerCase()];
+  return normalized || monthStr; // Return original if not found
+};
+
+// Helper function to normalize week format
+const normalizeWeek = (week) => {
+  if (!week) return null;
+  
+  const weekStr = String(week).trim();
+  
+  // Remove all spaces and convert to lowercase for easier matching
+  const weekLower = weekStr.replace(/\s+/g, '').toLowerCase();
+  
+  // Handle formats like: week1, week 1, Week 1, WEEK 1, WEEK1, week-1, etc.
+  // Extract number from any format
+  const weekMatch = weekLower.match(/week[^0-9]*(\d+)/) || weekLower.match(/^(\d+)$/);
+  
+  if (weekMatch) {
+    const weekNum = parseInt(weekMatch[1]);
+    if (weekNum >= 1 && weekNum <= 53) {
+      return `Week ${weekNum}`;
+    }
+  }
+  
+  // If it's already in "Week X" format, validate and return
+  const existingWeekMatch = weekStr.match(/^week\s*(\d+)$/i);
+  if (existingWeekMatch) {
+    const weekNum = parseInt(existingWeekMatch[1]);
+    if (weekNum >= 1 && weekNum <= 53) {
+      return `Week ${weekNum}`;
+    }
+  }
+  
+  return weekStr; // Return original if can't parse
+};
+
+// Bulk create productivity data
+const bulkCreateProductivityData = async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid data. Expected an array of productivity data records.'
+      });
+    }
+
+    const teamManager = req.user.managerId || req.user._id.toString();
+    const results = {
+      success: [],
+      failed: [],
+      errors: []
+    };
+
+    // Map to store team member email -> productivity data array for email notifications
+    const teamMemberProductivityMap = new Map();
+
+    // Process each record
+    for (let i = 0; i < data.length; i++) {
+      const record = data[i];
+      
+      try {
+        // Validate required fields
+        if (!record.associateName || !record.month || !record.week || record.productivityPercentage === undefined) {
+          results.failed.push({ index: i, record, error: 'Missing required fields' });
+          continue;
+        }
+        
+        console.log(`Processing record ${i + 1}/${data.length}:`, {
+          associateName: record.associateName,
+          month: record.month,
+          week: record.week,
+          year: record.year
+        });
+
+        // Check if team member exists by name or da_id (case-insensitive)
+        const associateNameUpper = record.associateName.toUpperCase();
+        const teamMember = await TeamMember.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${record.associateName}$`, 'i') } },
+            { da_id: { $regex: new RegExp(`^${associateNameUpper}$`, 'i') } }
+          ],
+          isActive: true
+        });
+        
+        if (!teamMember) {
+          results.failed.push({ 
+            index: i, 
+            record, 
+            error: `Team member with name or DA ID '${record.associateName}' does not exist` 
+          });
+          continue;
+        }
+        
+        // Use the actual name from the database
+        const actualAssociateName = teamMember.name;
+
+        // Normalize month name (convert abbreviated to full name)
+        const normalizedMonth = normalizeMonth(record.month);
+        if (!normalizedMonth || !['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].includes(normalizedMonth)) {
+          results.failed.push({ 
+            index: i, 
+            record, 
+            error: `Invalid month: '${record.month}'. Month must be a valid month name (e.g., January, Feb, Jan, etc.)` 
+          });
+          continue;
+        }
+
+        // Normalize week format (handle all formats: 12, 3, week1, week 1, Week 1, WEEK 1, WEEK1, etc.)
+        const normalizedWeek = normalizeWeek(record.week);
+        if (!normalizedWeek || !normalizedWeek.match(/^Week \d+$/)) {
+          results.failed.push({ 
+            index: i, 
+            record, 
+            error: `Invalid week format: '${record.week}'. Week must be a number between 1-53 or in format like 'Week 1', 'week1', etc.` 
+          });
+          continue;
+        }
+        
+        // Extract week number from normalized week string
+        const weekMatch = normalizedWeek.match(/\d+/);
+        const weekNumber = weekMatch ? parseInt(weekMatch[0]) : null;
+
+        if (!weekNumber || weekNumber < 1 || weekNumber > 53) {
+          results.failed.push({ 
+            index: i, 
+            record, 
+            error: 'Invalid week number. Week must be between 1 and 53' 
+          });
+          continue;
+        }
+
+        // Create new record (allow duplicates - don't check for existing records)
+        const productivityData = await ProductivityData.create({
+          teamManager: record.teamManager || teamManager,
+          associateName: actualAssociateName,
+          month: normalizedMonth,
+          week: normalizedWeek,
+          productivityPercentage: record.productivityPercentage || 0,
+          year: record.year || new Date().getFullYear(),
+          weekNumber: weekNumber
+        });
+
+        console.log(`Successfully created record ${i + 1}:`, {
+          id: productivityData._id,
+          associateName: actualAssociateName,
+          week: normalizedWeek,
+          month: normalizedMonth,
+          year: record.year
+        });
+        
+        results.success.push(productivityData);
+        
+        // Store productivity data for email notification (grouped by team member)
+        const teamMemberEmail = teamMember.email;
+        if (!teamMemberProductivityMap.has(teamMemberEmail)) {
+          teamMemberProductivityMap.set(teamMemberEmail, {
+            teamMember: teamMember,
+            productivityData: []
+          });
+        }
+        teamMemberProductivityMap.get(teamMemberEmail).productivityData.push(productivityData);
+      } catch (error) {
+        console.error(`Error processing record ${i}:`, error);
+        results.failed.push({ 
+          index: i, 
+          record, 
+          error: error.message || 'Unknown error' 
+        });
+      }
+    }
+
+    // Send email notifications to team members
+    // Send emails asynchronously so they don't block the response
+    if (teamMemberProductivityMap.size > 0) {
+      Promise.all(
+        Array.from(teamMemberProductivityMap.values()).map(async ({ teamMember, productivityData }) => {
+          try {
+            await sendProductivityNotificationEmail(teamMember, productivityData);
+          } catch (emailError) {
+            console.error(`Failed to send email to ${teamMember.email}:`, emailError);
+            // Don't fail the entire request if email fails
+          }
+        })
+      ).catch(error => {
+        console.error('Error sending productivity notification emails:', error);
+      });
+    }
+
+    // Determine response status
+    const allFailed = results.success.length === 0;
+    const allSuccess = results.failed.length === 0;
+    const statusCode = allFailed ? 400 : (allSuccess ? 201 : 207); // 207 = Multi-Status
+
+    console.log(`Bulk upload completed: ${results.success.length} succeeded, ${results.failed.length} failed out of ${data.length} total records`);
+    if (results.failed.length > 0) {
+      console.log('Failed records:', results.failed.map(f => ({
+        index: f.index,
+        associateName: f.record?.associateName,
+        error: f.error
+      })));
+    }
+
+    res.status(statusCode).json({
+      status: allSuccess ? 'success' : (allFailed ? 'error' : 'partial'),
+      message: `Processed ${data.length} records. ${results.success.length} succeeded, ${results.failed.length} failed.`,
+      results: {
+        total: data.length,
+        success: results.success.length,
+        failed: results.failed.length,
+        successRecords: results.success,
+        failedRecords: results.failed
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk create:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Something went wrong while processing bulk upload!'
+    });
+  }
+};
+
 module.exports = {
   getAllProductivityData,
   getProductivityData,
@@ -698,5 +1010,6 @@ module.exports = {
   getProductivityByWeek,
   getProductivityByMonth,
   getTeamMemberProductivityHistory,
-  getPerformanceTrends
+  getPerformanceTrends,
+  bulkCreateProductivityData
 };

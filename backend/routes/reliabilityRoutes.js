@@ -10,7 +10,8 @@ const {
   getTopPerformers,
   getPerformanceStats,
   getUserPerformanceHistory,
-  getPerformanceByPeriod
+  getPerformanceByPeriod,
+  bulkCreateReliabilityData
 } = require('../controllers/reliabilityController');
 const { protect, restrictTo, checkActive } = require('../middleware/auth');
 
@@ -35,6 +36,7 @@ router.get('/period/:year/:month', getPerformanceByPeriod);
 router.get('/user/:daId/history', getUserPerformanceHistory);
 router.get('/:id', getReliabilityData);
 router.post('/', createReliabilityData);
+router.post('/bulk', bulkCreateReliabilityData);
 router.patch('/:id', updateReliabilityData);
 router.delete('/:id', deleteReliabilityData);
 

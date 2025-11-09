@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Data Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #146EB4; /* AWS Blue */
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+        .data-table tr:hover {
+            background-color: #f9fafb;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #146EB4;
+        }
+        .performance-excellent {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .performance-good {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        .performance-average {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        .performance-below {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Productivity Data Update</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{name}},</h2>
+            <p>Your productivity data has been updated by your manager. Below are the details:</p>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Week</th>
+                        <th>Year</th>
+                        <th>Productivity %</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{productivityData}}
+                </tbody>
+            </table>
+            
+            <p><strong>Summary:</strong></p>
+            <ul>
+                <li>Total Records: {{totalRecords}}</li>
+                <li>Average Productivity: {{averageProductivity}}%</li>
+            </ul>
+            
+            <p>If you have any questions or concerns about your productivity data, please contact your manager.</p>
+            
+            <p>Best regards,<br>Management Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 Our Application. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+

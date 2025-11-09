@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { SOPService, SOP } from '../services/sop.service';
+import { SOPService, SOP, BinItem } from '../services/sop.service';
+import { QuickLinkService, QuickLink } from '../services/quick-link.service';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -13,9 +14,18 @@ import { AuthService } from '../services/auth.service';
   styleUrls: ['./sop-list.css']
 })
 export class SOPListComponent implements OnInit {
+  // Tab state
+  activeTab: 'sops' | 'quickLinks' | 'trash' = 'sops';
+  
+  // SOPs data
   sops: SOP[] = [];
   loading = false;
   error = '';
+  
+  // Quick Links data
+  quickLinks: QuickLink[] = [];
+  quickLinksLoading = false;
+  quickLinksError = '';
   
   // Pagination
   currentPage = 1;
@@ -23,21 +33,39 @@ export class SOPListComponent implements OnInit {
   totalItems = 0;
   itemsPerPage = 10;
   
+  // Quick Links pagination
+  quickLinksCurrentPage = 1;
+  quickLinksTotalPages = 1;
+  quickLinksTotalItems = 0;
+  quickLinksItemsPerPage = 10;
+  
   // Filters
   searchTerm = '';
   sortBy = 'createdAt';
   sortOrder = 'desc';
+  
+  // Quick Links filters
+  quickLinksSearchTerm = '';
+  quickLinksSortBy = 'createdAt';
+  quickLinksSortOrder = 'desc';
   
   // User info
   userRole = '';
   
   // UI state
   showFilters = false;
+  showQuickLinksFilters = false;
   selectedProcess: string | null = null;
   
   // Process grouping
   processes: { processName: string; count: number }[] = [];
   processGroupsMap: Map<string, SOP[]> = new Map();
+  
+  // Trash/Bin properties
+  binItems: BinItem[] = [];
+  binLoading = false;
+  binError = '';
+  selectedBinCollection = 'all';
   
   // Get processes as array for template
   get processesArray(): { processName: string; count: number }[] {
@@ -54,6 +82,7 @@ export class SOPListComponent implements OnInit {
 
   constructor(
     private sopService: SOPService,
+    private quickLinkService: QuickLinkService,
     private router: Router,
     private authService: AuthService
   ) {
@@ -78,6 +107,134 @@ export class SOPListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSOPs();
+    this.loadQuickLinks();
+  }
+  
+  // Tab switching
+  switchTab(tab: 'sops' | 'quickLinks' | 'trash'): void {
+    this.activeTab = tab;
+    if (tab === 'quickLinks' && this.quickLinks.length === 0) {
+      this.loadQuickLinks();
+    } else if (tab === 'trash' && this.binItems.length === 0) {
+      this.loadBinItems();
+    }
+  }
+  
+  // Quick Links methods
+  loadQuickLinks(): void {
+    this.quickLinksLoading = true;
+    this.quickLinksError = '';
+
+    const params = {
+      page: this.quickLinksCurrentPage,
+      limit: this.quickLinksItemsPerPage,
+      search: this.quickLinksSearchTerm || undefined,
+      sortBy: this.quickLinksSortBy,
+      sortOrder: this.quickLinksSortOrder
+    };
+
+    this.quickLinkService.getAllQuickLinks(params).subscribe({
+      next: (response) => {
+        this.quickLinks = response.quickLinks;
+        if (response.pagination) {
+          this.quickLinksCurrentPage = response.pagination.currentPage;
+          this.quickLinksTotalPages = response.pagination.totalPages;
+          this.quickLinksTotalItems = response.pagination.totalItems;
+          this.quickLinksItemsPerPage = response.pagination.itemsPerPage;
+        }
+        this.quickLinksLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading Quick Links:', error);
+        this.quickLinksError = 'Failed to load Quick Links. Please try again.';
+        this.quickLinksLoading = false;
+      }
+    });
+  }
+  
+  onQuickLinksSearch(): void {
+    this.quickLinksCurrentPage = 1;
+    this.loadQuickLinks();
+  }
+  
+  onQuickLinksFilterChange(): void {
+    this.quickLinksCurrentPage = 1;
+    this.loadQuickLinks();
+  }
+  
+  onQuickLinksSortChange(): void {
+    this.loadQuickLinks();
+  }
+  
+  onQuickLinksPageChange(page: number): void {
+    if (page >= 1 && page <= this.quickLinksTotalPages) {
+      this.quickLinksCurrentPage = page;
+      this.loadQuickLinks();
+    }
+  }
+  
+  createQuickLink(): void {
+    this.router.navigate(['/quick-links/create']);
+  }
+  
+  editQuickLink(quickLink: QuickLink): void {
+    this.router.navigate(['/quick-links', quickLink._id, 'edit']);
+  }
+  
+  deleteQuickLink(quickLink: QuickLink): void {
+    if (confirm(`Are you sure you want to delete "${quickLink.title}"?`)) {
+      this.quickLinkService.deleteQuickLink(quickLink._id).subscribe({
+        next: () => {
+          this.loadQuickLinks();
+        },
+        error: (error) => {
+          console.error('Error deleting Quick Link:', error);
+          this.quickLinksError = 'Failed to delete Quick Link. Please try again.';
+        }
+      });
+    }
+  }
+  
+  canEditQuickLink(quickLink: QuickLink): boolean {
+    return this.quickLinkService.canEditQuickLink(quickLink);
+  }
+  
+  openLink(link: string): void {
+    window.open(link, '_blank');
+  }
+  
+  clearQuickLinksFilters(): void {
+    this.quickLinksSearchTerm = '';
+    this.quickLinksSortBy = 'createdAt';
+    this.quickLinksSortOrder = 'desc';
+    this.quickLinksCurrentPage = 1;
+    this.loadQuickLinks();
+  }
+  
+  toggleQuickLinksFilters(): void {
+    this.showQuickLinksFilters = !this.showQuickLinksFilters;
+  }
+  
+  getQuickLinksPaginationPages(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    
+    let start = Math.max(1, this.quickLinksCurrentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.quickLinksTotalPages, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+  
+  getQuickLinksMaxDisplayItems(): number {
+    return Math.min(this.quickLinksCurrentPage * this.quickLinksItemsPerPage, this.quickLinksTotalItems);
   }
 
   loadSOPs(): void {
@@ -219,5 +376,103 @@ export class SOPListComponent implements OnInit {
   backToProcessList(): void {
     this.selectedProcess = null;
     this.currentPage = 1;
+  }
+
+  // Trash/Bin methods
+  loadBinItems(): void {
+    this.binLoading = true;
+    this.binError = '';
+
+    const collection = this.selectedBinCollection === 'all' ? undefined : this.selectedBinCollection;
+
+    this.sopService.getBinItems(collection).subscribe({
+      next: (response) => {
+        this.binItems = response.items;
+        this.binLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading bin items:', error);
+        this.binError = 'Failed to load bin items. Please try again.';
+        this.binLoading = false;
+      }
+    });
+  }
+
+  filterBinByCollection(collection: string): void {
+    this.selectedBinCollection = collection;
+    this.loadBinItems();
+  }
+
+  restoreBinItem(item: BinItem): void {
+    if (!confirm(`Are you sure you want to restore this ${item.collectionName.slice(0, -1)}?`)) {
+      return;
+    }
+
+    this.sopService.restoreFromBin(item._id).subscribe({
+      next: (response) => {
+        alert('Item restored successfully!');
+        this.loadBinItems(); // Reload the list
+        // Also reload SOPs if we're restoring a SOP
+        if (item.collectionName === 'sops') {
+          this.loadSOPs();
+        }
+      },
+      error: (error) => {
+        console.error('Error restoring item:', error);
+        alert('Failed to restore item. Please try again.');
+      }
+    });
+  }
+
+  getBinItemTitle(item: BinItem): string {
+    if (item.data && item.data.title) {
+      return item.data.title;
+    }
+    return `${item.collectionName.slice(0, -1)} (${item.originalId.substring(0, 8)}...)`;
+  }
+
+  getBinItemDescription(item: BinItem): string {
+    if (item.data && item.data.description) {
+      return item.data.description;
+    }
+    return 'No description available';
+  }
+
+  getBinExpiryWarningClass(daysUntilExpiry: number): string {
+    if (daysUntilExpiry <= 3) {
+      return 'bg-red-100 text-red-800 border-red-200';
+    } else if (daysUntilExpiry <= 7) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    } else {
+      return 'bg-green-100 text-green-800 border-green-200';
+    }
+  }
+
+  getBinCollectionIcon(collectionName: string): string {
+    switch (collectionName) {
+      case 'sops':
+        return 'fas fa-file-alt';
+      default:
+        return 'fas fa-box';
+    }
+  }
+
+  getBinCollectionColor(collectionName: string): string {
+    switch (collectionName) {
+      case 'sops':
+        return 'bg-orange-500';
+      default:
+        return 'bg-gray-500';
+    }
+  }
+
+  getBinDaysRemainingText(days: number): string {
+    if (days <= 0) {
+      return 'Expiring soon';
+    } else if (days === 1) {
+      return '1 day remaining';
+    } else {
+      return `${days} days remaining`;
+    }
   }
 }

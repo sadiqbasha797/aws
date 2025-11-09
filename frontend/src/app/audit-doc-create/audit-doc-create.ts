@@ -1,0 +1,136 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AuditDocService, AuditDoc } from '../services/audit-doc.service';
+import { AuthService } from '../services/auth.service';
+
+@Component({
+  selector: 'app-audit-doc-create',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './audit-doc-create.html',
+  styleUrls: ['./audit-doc-create.css']
+})
+export class AuditDocCreateComponent implements OnInit {
+  isEditMode = false;
+  editingId = '';
+  loading = false;
+  error = '';
+  successMessage = '';
+
+  auditDocForm = {
+    file: null as File | null,
+    date: new Date().toISOString().split('T')[0]
+  };
+
+  selectedFile: File | null = null;
+  existingAuditDoc: AuditDoc | null = null;
+
+  constructor(
+    private auditDocService: AuditDocService,
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit() {
+    // Check if we're in edit mode
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.isEditMode = true;
+        this.editingId = params['id'];
+        this.loadAuditDoc();
+      }
+    });
+  }
+
+  loadAuditDoc() {
+    this.loading = true;
+    this.error = '';
+
+    this.auditDocService.getAuditDoc(this.editingId).subscribe({
+      next: (response) => {
+        if (response.status === 'success' && response.data?.auditDoc) {
+          this.existingAuditDoc = response.data.auditDoc;
+          this.auditDocForm.date = new Date(response.data.auditDoc.date).toISOString().split('T')[0];
+        }
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading audit doc:', error);
+        this.error = 'Failed to load audit document';
+        this.loading = false;
+      }
+    });
+  }
+
+  onFileSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      this.selectedFile = target.files[0];
+      this.auditDocForm.file = this.selectedFile;
+    }
+  }
+
+  saveAuditDoc() {
+    if (this.isEditMode) {
+      // For edit mode, file is optional
+      if (!this.auditDocForm.date) {
+        this.error = 'Date is required';
+        return;
+      }
+    } else {
+      // For create mode, file is required
+      if (!this.auditDocForm.file || !this.auditDocForm.date) {
+        this.error = 'Please select a document file and date';
+        return;
+      }
+    }
+
+    if (this.loading) {
+      return;
+    }
+
+    this.loading = true;
+    this.error = '';
+    this.successMessage = '';
+
+    const operation = this.isEditMode
+      ? this.auditDocService.updateAuditDoc(
+          this.editingId,
+          this.auditDocForm.file,
+          this.auditDocForm.date
+        )
+      : this.auditDocService.createAuditDoc(
+          this.auditDocForm.file!,
+          this.auditDocForm.date
+        );
+
+    operation.subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.status === 'success') {
+          this.successMessage = this.isEditMode
+            ? 'Audit document updated successfully'
+            : 'Audit document created successfully';
+          setTimeout(() => {
+            this.router.navigate(['/reliability'], { queryParams: { tab: 'audit-docs' } });
+          }, 1000);
+        } else {
+          this.error = response.message || 'Operation failed';
+        }
+      },
+      error: (error) => {
+        this.loading = false;
+        console.error('Error saving audit doc:', error);
+        this.error = error.error?.message || error.error?.details || 'Failed to save audit document';
+      }
+    });
+  }
+
+  cancel() {
+    this.router.navigate(['/reliability'], { queryParams: { tab: 'audit-docs' } });
+  }
+}
+

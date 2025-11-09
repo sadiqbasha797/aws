@@ -22,6 +22,9 @@ app.use('/api/productivity', require('./routes/productivityRoutes'));
 app.use('/api/files', require('./routes/fileRoutes'));
 app.use('/api/sops', require('./routes/sopRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/processes', require('./routes/processRoutes'));
+app.use('/api/quick-links', require('./routes/quickLinkRoutes'));
+app.use('/api/audit-docs', require('./routes/auditDocRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

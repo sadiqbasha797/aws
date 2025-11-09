@@ -6,3 +6,5 @@ export * from './productivity.service';
 export * from './reliability.service';
 export * from './sidebar.service';
 export * from './team-member.service';
+export * from './process.service';
+export * from './quick-link.service';

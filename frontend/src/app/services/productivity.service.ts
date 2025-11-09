@@ -222,4 +222,10 @@ export class ProductivityService {
       headers: this.getHeaders()
     });
   }
+
+  bulkCreateProductivityData(data: any[]): Observable<ProductivityResponse> {
+    return this.http.post<ProductivityResponse>(`${this.baseUrl}/bulk`, { data }, {
+      headers: this.getHeaders()
+    });
+  }
 }

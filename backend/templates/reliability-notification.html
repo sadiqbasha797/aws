@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Data Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #146EB4; /* AWS Blue */
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .data-section {
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .data-row:last-child {
+            border-bottom: none;
+        }
+        .data-label {
+            font-weight: bold;
+            color: #4b5563;
+        }
+        .data-value {
+            color: #111827;
+        }
+        .score-highlight {
+            font-size: 24px;
+            font-weight: bold;
+            color: #146EB4;
+            text-align: center;
+            padding: 20px;
+            background-color: #eff6ff;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .performance-excellent {
+            color: #10b981;
+        }
+        .performance-good {
+            color: #3b82f6;
+        }
+        .performance-average {
+            color: #f59e0b;
+        }
+        .performance-below {
+            color: #ef4444;
+        }
+        .footer {
+            background-color: #f3f4f6;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Reliability Data Update</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{name}},</h2>
+            <p>Your reliability data has been updated by your manager. Below are the details:</p>
+            
+            <div class="score-highlight {{performanceClass}}">
+                Overall Reliability Score: {{overallReliabilityScore}}%
+            </div>
+            
+            <div class="data-section">
+                <div class="data-row">
+                    <span class="data-label">Period:</span>
+                    <span class="data-value">{{month}}/{{year}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Process Name:</span>
+                    <span class="data-value">{{processname}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Job ID:</span>
+                    <span class="data-value">{{job_id}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Worker ID:</span>
+                    <span class="data-value">{{workerId}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">DA ID:</span>
+                    <span class="data-value">{{daId}}</span>
+                </div>
+            </div>
+            
+            <div class="data-section">
+                <h3 style="margin-top: 0;">Task Details</h3>
+                <div class="data-row">
+                    <span class="data-label">Total Tasks:</span>
+                    <span class="data-value">{{totalTasks}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Total Opportunities:</span>
+                    <span class="data-value">{{totalOpportunities}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Total Defects:</span>
+                    <span class="data-value">{{totalDefects}}</span>
+                </div>
+            </div>
+            
+            <div class="data-section">
+                <h3 style="margin-top: 0;">Accuracy Metrics</h3>
+                <div class="data-row">
+                    <span class="data-label">Segment Accuracy:</span>
+                    <span class="data-value">{{segmentAccuracy}}%</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Label Accuracy:</span>
+                    <span class="data-value">{{labelAccuracy}}%</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Defect Rate:</span>
+                    <span class="data-value">{{defectRate}}%</span>
+                </div>
+            </div>
+            
+            <p>If you have any questions or concerns about your reliability data, please contact your manager.</p>
+            
+            <p>Best regards,<br>Management Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 Our Application. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+

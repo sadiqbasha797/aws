@@ -1,257 +1,410 @@
-<div class="min-h-screen bg-gray-50 p-6">
-  <div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <div class="flex items-center space-x-3 mb-4">
-        <div class="flex items-center justify-center w-12 h-12 bg-orange-500 rounded-lg">
-          <i class="fas fa-check-circle text-white text-xl"></i>
-        </div>
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">Add Reliability Data</h1>
-          <p class="text-gray-600 mt-1">Create a new reliability record</p>
-        </div>
+<div class="reliability-create-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-plus"></i>
+      Add Reliability Data
+    </h1>
+  </div>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button
+      (click)="switchToExcelMode()"
+      [class]="uploadMode === 'excel' 
+        ? 'mode-btn active' 
+        : 'mode-btn'">
+      <i class="fas fa-file-excel"></i>
+      Excel Upload
+    </button>
+    <button
+      (click)="switchToManualMode()"
+      [class]="uploadMode === 'manual' 
+        ? 'mode-btn active' 
+        : 'mode-btn'">
+      <i class="fas fa-edit"></i>
+      Manual Entry
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Excel Upload Mode -->
+  <div *ngIf="uploadMode === 'excel'" class="reliability-form">
+    <div class="form-section">
+      <h2>Upload Instructions</h2>
+      <div class="info-box">
+        <ul>
+          <li>Your Excel file should contain these columns: Worker ID, DA ID, Total Tasks, Total Opportunities, Total Segments Matching, Total Label Matching, Total Defects, Overall Reliability Score %</li>
+          <li>Process Name, Job ID, Year, and Month will be applied to all rows from the form below</li>
+          <li>Only .xlsx and .xls files are supported</li>
+        </ul>
       </div>
     </div>
 
-    <!-- Form -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <form (ngSubmit)="createReliability()" class="space-y-6">
-        <!-- Error Message -->
-        <div *ngIf="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div class="flex">
-            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
-            <span class="text-sm text-red-700">{{ error }}</span>
+    <form (ngSubmit)="uploadExcelBulkData()" class="form-content">
+      <div class="form-section">
+        <h2>Common Information</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="excel-processname">Process Name *</label>
+            <select 
+              id="excel-processname"
+              [(ngModel)]="excelUploadForm.processname" 
+              name="excel-processname"
+              class="form-control"
+              required>
+              <option value="">Select Process Name</option>
+              <option *ngFor="let processName of getAvailableProcessNames()" [value]="processName">
+                {{ processName }}
+              </option>
+            </select>
+            <small class="text-gray-500 text-xs mt-1">
+              Select from existing processes in the database
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="excel-job_id">Job ID *</label>
+            <input 
+              type="text" 
+              id="excel-job_id"
+              [(ngModel)]="excelUploadForm.job_id" 
+              name="excel-job_id"
+              class="form-control"
+              placeholder="Enter job ID"
+              required>
           </div>
         </div>
 
-        <!-- Worker Information -->
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Worker Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="excel-year">Year *</label>
+            <select 
+              id="excel-year"
+              [(ngModel)]="excelUploadForm.year" 
+              name="excel-year"
+              class="form-control"
+              required>
+              <option *ngFor="let year of yearOptions" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="excel-month">Month *</label>
+            <select 
+              id="excel-month"
+              [(ngModel)]="excelUploadForm.month" 
+              name="excel-month"
+              class="form-control"
+              required>
+              <option *ngFor="let month of monthOptions" [value]="month.value">{{ month.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Excel File Upload</h2>
+        
+        <div class="file-upload">
+          <input 
+            type="file" 
+            id="excel-file-upload"
+            (change)="onExcelFileSelected($event)"
+            accept=".xlsx,.xls"
+            class="file-input">
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="daId" class="block text-sm font-medium text-gray-700 mb-2">
-                DA ID <span class="text-red-500">*</span>
-              </label>
-              <select 
-                id="daId"
-                [(ngModel)]="reliabilityForm.daId" 
-                name="daId"
-                (change)="onDaIdChange()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                required
-                [disabled]="isLoadingTeamMembers">
-                <option value="">{{ isLoadingTeamMembers ? 'Loading...' : 'Select DA ID' }}</option>
-                <option *ngFor="let member of availableTeamMembers" [value]="member.da_id">
-                  {{ member.da_id }} - {{ member.name }}
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label for="workerId" class="block text-sm font-medium text-gray-700 mb-2">
-                Worker ID <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="workerId"
-                [(ngModel)]="reliabilityForm.workerId" 
-                name="workerId"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter worker ID"
-                required>
-            </div>
-
-            <div>
-              <label for="processname" class="block text-sm font-medium text-gray-700 mb-2">
-                Process Name <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="processname"
-                [(ngModel)]="reliabilityForm.processname" 
-                name="processname"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter process name"
-                required>
-            </div>
-
-            <div>
-              <label for="job_id" class="block text-sm font-medium text-gray-700 mb-2">
-                Job ID <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="job_id"
-                [(ngModel)]="reliabilityForm.job_id" 
-                name="job_id"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter job ID"
-                required>
-            </div>
-          </div>
-        </div>
-
-        <!-- Period Information -->
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Period Information</h2>
+          <label for="excel-file-upload" class="file-input-label">
+            <i class="fas fa-file-excel"></i>
+            Choose Excel File
+          </label>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="month" class="block text-sm font-medium text-gray-700 mb-2">
-                Month <span class="text-red-500">*</span>
-              </label>
-              <select 
-                id="month"
-                [(ngModel)]="reliabilityForm.month" 
-                name="month"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                required>
-                <option *ngFor="let month of monthOptions" [value]="month.value">{{ month.label }}</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="year" class="block text-sm font-medium text-gray-700 mb-2">
-                Year <span class="text-red-500">*</span>
-              </label>
-              <select 
-                id="year"
-                [(ngModel)]="reliabilityForm.year" 
-                name="year"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                required>
-                <option *ngFor="let year of yearOptions" [value]="year">{{ year }}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Task Metrics -->
-        <div class="space-y-4">
-          <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Task Metrics</h2>
+          <p class="file-info">
+            Upload Excel file (.xlsx, .xls)
+          </p>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="totalTasks" class="block text-sm font-medium text-gray-700 mb-2">
-                Total Tasks <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="totalTasks"
-                [(ngModel)]="reliabilityForm.totalTasks" 
-                name="totalTasks"
-                (input)="calculateScore()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="0"
-                required>
-            </div>
+          <p *ngIf="selectedExcelFile" class="selected-file">
+            <i class="fas fa-check-circle"></i>
+            Selected: {{ selectedExcelFile.name }}
+          </p>
+        </div>
 
-            <div>
-              <label for="totalOpportunities" class="block text-sm font-medium text-gray-700 mb-2">
-                Total Opportunities <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="totalOpportunities"
-                [(ngModel)]="reliabilityForm.totalOpportunities" 
-                name="totalOpportunities"
-                (input)="calculateScore()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="1"
-                required>
-            </div>
+        <!-- Preview Table -->
+        <div *ngIf="excelPreviewData.length > 0" class="preview-table">
+          <h4>Preview (First 5 rows)</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Worker ID</th>
+                <th>DA ID</th>
+                <th>Tasks</th>
+                <th>Opportunities</th>
+                <th>Defects</th>
+                <th>Score %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of excelPreviewData">
+                <td>{{ row.workerId }}</td>
+                <td>{{ row.daId }}</td>
+                <td>{{ row.totalTasks }}</td>
+                <td>{{ row.totalOpportunities }}</td>
+                <td>{{ row.totalDefects }}</td>
+                <td>{{ row.overallReliabilityScore | number:'1.2-2' }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <div>
-              <label for="totalSegmentsMatching" class="block text-sm font-medium text-gray-700 mb-2">
-                Segments Matching <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="totalSegmentsMatching"
-                [(ngModel)]="reliabilityForm.totalSegmentsMatching" 
-                name="totalSegmentsMatching"
-                (input)="calculateScore()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="0"
-                required>
-            </div>
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="isUploadingExcel || !selectedExcelFile || !excelUploadForm.processname || !excelUploadForm.job_id">
+          <i class="fas fa-spinner fa-spin" *ngIf="isUploadingExcel"></i>
+          <i class="fas fa-upload" *ngIf="!isUploadingExcel"></i>
+          {{ isUploadingExcel ? 'Uploading...' : 'Upload Data' }}
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary"
+          (click)="cancel()"
+          [disabled]="isUploadingExcel">
+          <i class="fas fa-times"></i>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
 
-            <div>
-              <label for="totalLabelMatching" class="block text-sm font-medium text-gray-700 mb-2">
-                Labels Matching <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="totalLabelMatching"
-                [(ngModel)]="reliabilityForm.totalLabelMatching" 
-                name="totalLabelMatching"
-                (input)="calculateScore()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="0"
-                required>
-            </div>
+  <!-- Manual Entry Mode -->
+  <div *ngIf="uploadMode === 'manual'" class="reliability-form">
+    <form (ngSubmit)="createReliability()" class="form-content">
+      <div class="form-section">
+        <h2>Worker Information</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="daId">DA ID *</label>
+            <select 
+              id="daId"
+              [(ngModel)]="reliabilityForm.daId" 
+              name="daId"
+              (change)="onDaIdChange()"
+              class="form-control"
+              required
+              [disabled]="isLoadingTeamMembers">
+              <option value="">{{ isLoadingTeamMembers ? 'Loading...' : 'Select DA ID' }}</option>
+              <option *ngFor="let member of availableTeamMembers" [value]="member.da_id">
+                {{ member.da_id }} - {{ member.name }}
+              </option>
+            </select>
+          </div>
 
-            <div>
-              <label for="totalDefects" class="block text-sm font-medium text-gray-700 mb-2">
-                Total Defects <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="totalDefects"
-                [(ngModel)]="reliabilityForm.totalDefects" 
-                name="totalDefects"
-                (input)="calculateScore()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="0"
-                required>
-            </div>
-
-            <div>
-              <label for="overallReliabilityScore" class="block text-sm font-medium text-gray-700 mb-2">
-                Overall Reliability Score <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="number" 
-                id="overallReliabilityScore"
-                [(ngModel)]="reliabilityForm.overallReliabilityScore" 
-                name="overallReliabilityScore"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="0"
-                max="100"
-                step="0.01"
-                required>
-              <p class="text-xs text-gray-500 mt-1">Score is calculated automatically, or enter manually (0-100)</p>
-              <button 
-                type="button"
-                (click)="calculateScore()"
-                class="mt-2 text-xs text-orange-600 hover:text-orange-700 underline">
-                Calculate Score
-              </button>
-            </div>
+          <div class="form-group">
+            <label for="workerId">Worker ID *</label>
+            <input 
+              type="text" 
+              id="workerId"
+              [(ngModel)]="reliabilityForm.workerId" 
+              name="workerId"
+              class="form-control"
+              placeholder="Enter worker ID"
+              required>
           </div>
         </div>
 
-        <!-- Form Actions -->
-        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-          <button 
-            type="button" 
-            (click)="cancel()"
-            class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300">
-            <i class="fas fa-times mr-2"></i>
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            [disabled]="loading || isLoadingTeamMembers"
-            class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
-            <i *ngIf="loading" class="fas fa-spinner fa-spin mr-2"></i>
-            <i *ngIf="!loading" class="fas fa-save mr-2"></i>
-            {{ loading ? 'Creating...' : 'Create Reliability Record' }}
-          </button>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="processname">Process Name *</label>
+            <select 
+              id="processname"
+              [(ngModel)]="reliabilityForm.processname" 
+              name="processname"
+              class="form-control"
+              required>
+              <option value="">Select Process Name</option>
+              <option *ngFor="let processName of getAvailableProcessNames()" [value]="processName">
+                {{ processName }}
+              </option>
+            </select>
+            <small class="text-gray-500 text-xs mt-1">
+              Select from existing processes in the database
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="job_id">Job ID *</label>
+            <input 
+              type="text" 
+              id="job_id"
+              [(ngModel)]="reliabilityForm.job_id" 
+              name="job_id"
+              class="form-control"
+              placeholder="Enter job ID"
+              required>
+          </div>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Period Information</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="month">Month *</label>
+            <select 
+              id="month"
+              [(ngModel)]="reliabilityForm.month" 
+              name="month"
+              class="form-control"
+              required>
+              <option *ngFor="let month of monthOptions" [value]="month.value">{{ month.label }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="year">Year *</label>
+            <select 
+              id="year"
+              [(ngModel)]="reliabilityForm.year" 
+              name="year"
+              class="form-control"
+              required>
+              <option *ngFor="let year of yearOptions" [value]="year">{{ year }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Task Metrics</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="totalTasks">Total Tasks *</label>
+            <input 
+              type="number" 
+              id="totalTasks"
+              [(ngModel)]="reliabilityForm.totalTasks" 
+              name="totalTasks"
+              (input)="calculateScore()"
+              class="form-control"
+              min="0"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="totalOpportunities">Total Opportunities *</label>
+            <input 
+              type="number" 
+              id="totalOpportunities"
+              [(ngModel)]="reliabilityForm.totalOpportunities" 
+              name="totalOpportunities"
+              (input)="calculateScore()"
+              class="form-control"
+              min="1"
+              required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="totalSegmentsMatching">Segments Matching *</label>
+            <input 
+              type="number" 
+              id="totalSegmentsMatching"
+              [(ngModel)]="reliabilityForm.totalSegmentsMatching" 
+              name="totalSegmentsMatching"
+              (input)="calculateScore()"
+              class="form-control"
+              min="0"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="totalLabelMatching">Labels Matching *</label>
+            <input 
+              type="number" 
+              id="totalLabelMatching"
+              [(ngModel)]="reliabilityForm.totalLabelMatching" 
+              name="totalLabelMatching"
+              (input)="calculateScore()"
+              class="form-control"
+              min="0"
+              required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="totalDefects">Total Defects *</label>
+            <input 
+              type="number" 
+              id="totalDefects"
+              [(ngModel)]="reliabilityForm.totalDefects" 
+              name="totalDefects"
+              (input)="calculateScore()"
+              class="form-control"
+              min="0"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="overallReliabilityScore">Overall Reliability Score *</label>
+            <input 
+              type="number" 
+              id="overallReliabilityScore"
+              [(ngModel)]="reliabilityForm.overallReliabilityScore" 
+              name="overallReliabilityScore"
+              class="form-control"
+              min="0"
+              max="100"
+              step="0.01"
+              required>
+            <p class="form-hint">Score is calculated automatically, or enter manually (0-100)</p>
+            <button 
+              type="button"
+              (click)="calculateScore()"
+              class="btn-calculate">
+              Calculate Score
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary"
+          [disabled]="loading || isLoadingTeamMembers">
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          {{ loading ? 'Creating...' : 'Create Reliability Record' }}
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary"
+          (click)="cancel()"
+          [disabled]="loading">
+          <i class="fas fa-times"></i>
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 </div>
-

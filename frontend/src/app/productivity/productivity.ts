@@ -67,6 +67,11 @@ export class Productivity implements OnInit {
   teamMemberStats: any = null;
   showFilters = false;
   
+  // Calendar view state
+  calendarView: 'year' | 'week' | 'all' = 'year';
+  selectedYear: number = new Date().getFullYear();
+  selectedWeek: number | null = null;
+  
   // Pagination
   currentPage = 1;
   totalPages = 1;
@@ -134,6 +139,11 @@ export class Productivity implements OnInit {
 
   ngOnInit() {
     this.initializeYearOptions();
+    // Initialize calendar view first
+    this.calendarView = 'year';
+    this.selectedYear = new Date().getFullYear();
+    this.loadWeeksForYear();
+    // Then initialize component (which may try to load data, but will be blocked by calendar view check)
     this.initializeComponent();
   }
 
@@ -163,6 +173,18 @@ export class Productivity implements OnInit {
   }
 
   private loadInitialData() {
+    // Only load data if we're not in calendar view mode (year)
+    // Calendar view will load data when a week is selected or "Show All" is clicked
+    if (this.calendarView === 'year') {
+      return;
+    }
+    
+    // If in 'all' view, load all data
+    if (this.calendarView === 'all') {
+      this.loadAllProductivityData();
+      return;
+    }
+    
     if (this.isLoading) {
       return; // Prevent multiple simultaneous loads
     }
@@ -179,10 +201,13 @@ export class Productivity implements OnInit {
   private loadManagerData() {
     // isLoading is already set in loadInitialData()
     
+    // If showing all (no month filter), load all records with large limit
+    const isShowingAll = !this.filters.month;
+    
     // Prepare filters, excluding undefined values
     const filterParams: any = {
-      page: this.currentPage,
-      limit: this.pageSize
+      page: isShowingAll ? 1 : this.currentPage,
+      limit: isShowingAll ? 10000 : this.pageSize // Large limit when showing all
     };
     
     // Only add defined filter values
@@ -204,14 +229,19 @@ export class Productivity implements OnInit {
         if (allData?.status === 'success' && allData.data?.productivityData) {
           let records = allData.data.productivityData as ProductivityData[];
           if (this.filters.week !== undefined) {
-            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+            records = records.filter(r => this.getWeekFromData(r) === this.filters.week);
           }
           // Store all records before column filtering
           this.allProductivityData = records;
           // Apply column filters
           this.applyColumnFilters();
-          this.totalRecords = allData.total || 0;
-          this.totalPages = allData.pages || 1;
+          if (isShowingAll) {
+            this.totalRecords = records.length;
+            this.totalPages = 1; // Single page when showing all
+          } else {
+            this.totalRecords = allData.total || 0;
+            this.totalPages = allData.pages || 1;
+          }
         }
         
         // Load stats
@@ -256,9 +286,12 @@ export class Productivity implements OnInit {
   private loadUserData() {
     // isLoading is already set in loadInitialData()
     
+    // If showing all (no month filter), load all records with large limit
+    const isShowingAll = !this.filters.month;
+    
     this.productivityService.getMyProductivityData(
-      this.currentPage,
-      this.pageSize,
+      isShowingAll ? 1 : this.currentPage,
+      isShowingAll ? 10000 : this.pageSize, // Large limit when showing all
       this.filters.year,
       this.filters.month,
       undefined
@@ -267,14 +300,19 @@ export class Productivity implements OnInit {
         if (response.status === 'success' && response.data?.productivityData) {
           let records = response.data.productivityData as ProductivityData[];
           if (this.filters.week !== undefined) {
-            records = records.filter(r => this.getWeekNumber(r.createdAt!) === this.filters.week);
+            records = records.filter(r => this.getWeekFromData(r) === this.filters.week);
           }
           // Store all records before column filtering
           this.allProductivityData = records;
           // Apply column filters
           this.applyColumnFilters();
-          this.totalRecords = response.total || 0;
-          this.totalPages = response.pages || 1;
+          if (isShowingAll) {
+            this.totalRecords = records.length;
+            this.totalPages = 1; // Single page when showing all
+          } else {
+            this.totalRecords = response.total || 0;
+            this.totalPages = response.pages || 1;
+          }
         }
         this.isLoading = false;
       },
@@ -412,7 +450,11 @@ export class Productivity implements OnInit {
   goToPage(page: number) {
     if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
       this.currentPage = page;
-      this.loadInitialData();
+      if (this.calendarView === 'all') {
+        this.loadAllProductivityData();
+      } else {
+        this.loadInitialData();
+      }
     }
   }
 
@@ -468,6 +510,10 @@ export class Productivity implements OnInit {
     this.editingId = data._id || '';
     this.productivityForm = { ...data };
     this.showForm = true;
+    // Load team members if not already loaded
+    if (this.availableTeamMembers.length === 0) {
+      this.loadTeamMembers();
+    }
   }
 
   cancelForm() {
@@ -644,10 +690,231 @@ export class Productivity implements OnInit {
     return Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 
+  // Get week number from productivity data (prefer stored weekNumber or extract from week field)
+  getWeekFromData(data: ProductivityData): number {
+    // First try to use weekNumber if available
+    if (data.weekNumber) {
+      return data.weekNumber;
+    }
+    
+    // Otherwise, extract from week field (format: "Week X")
+    if (data.week) {
+      const weekMatch = data.week.match(/\d+/);
+      if (weekMatch) {
+        return parseInt(weekMatch[0]);
+      }
+    }
+    
+    // Fallback to calculating from createdAt
+    if (data.createdAt) {
+      return this.getWeekNumber(data.createdAt);
+    }
+    
+    return 0;
+  }
+
 
   // Get current month name
   getCurrentMonth(): string {
     return new Date().toLocaleString('default', { month: 'long' });
+  }
+  
+  // Calendar navigation methods
+  getMonths(): string[] {
+    return [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+  }
+  
+  selectWeek(week: number) {
+    this.selectedWeek = week;
+    this.calendarView = 'week';
+    this.loadProductivityForWeek();
+  }
+  
+  goBackToYear() {
+    this.calendarView = 'year';
+    this.selectedWeek = null;
+    this.productivityData = [];
+  }
+  
+  // Show all productivity data (bypass calendar)
+  showAllData() {
+    this.calendarView = 'all';
+    this.selectedWeek = null;
+    this.loadAllProductivityData();
+  }
+  
+  // Load all productivity data without filtering
+  loadAllProductivityData() {
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    // When showing all data, use a very large limit to get all records
+    const filterParams: any = {
+      page: 1,
+      limit: 10000 // Large limit to get all records
+    };
+    
+    if (this.userRole === 'manager') {
+      this.productivityService.getAllProductivityData(filterParams).subscribe({
+        next: (allData) => {
+          if (allData?.status === 'success' && allData.data?.productivityData) {
+            this.allProductivityData = allData.data.productivityData as ProductivityData[];
+            this.applyColumnFilters();
+            this.totalRecords = this.allProductivityData.length;
+            this.totalPages = 1; // Single page when showing all
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading all data:', error);
+          this.errorMessage = 'Failed to load productivity data';
+          this.isLoading = false;
+        }
+      });
+    } else {
+      this.productivityService.getMyProductivityData(
+        1,
+        10000 // Large limit to get all records
+      ).subscribe({
+        next: (response) => {
+          if (response.status === 'success' && response.data?.productivityData) {
+            this.allProductivityData = response.data.productivityData as ProductivityData[];
+            this.applyColumnFilters();
+            this.totalRecords = this.allProductivityData.length;
+            this.totalPages = 1; // Single page when showing all
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading all data:', error);
+          this.errorMessage = 'Failed to load your productivity data';
+          this.isLoading = false;
+        }
+      });
+    }
+  }
+  
+  // Go back to calendar view
+  goBackToCalendar() {
+    this.calendarView = 'year';
+    this.selectedWeek = null;
+    this.productivityData = [];
+    this.allProductivityData = [];
+  }
+  
+  // Get all week numbers for a specific year
+  getWeeksInYear(year: number): number[] {
+    // Get the first and last day of the year
+    const firstDay = new Date(year, 0, 1);
+    const lastDay = new Date(year, 11, 31);
+    
+    // Get ISO week numbers for first and last day
+    const firstWeek = this.getISOWeekNumber(firstDay);
+    const lastWeek = this.getISOWeekNumber(lastDay);
+    
+    // Handle year boundary cases - weeks can span across years
+    // Check if last week belongs to next year (week 1 of next year might be in current year)
+    const nextYearFirstDay = new Date(year + 1, 0, 1);
+    const nextYearFirstWeek = this.getISOWeekNumber(nextYearFirstDay);
+    
+    const weeks: number[] = [];
+    
+    // If next year's first week is week 1, we might need to include some weeks from previous year
+    // For simplicity, we'll show weeks 1-53, but filter based on what actually exists in the year
+    // Calculate total weeks - typically 52 or 53 weeks per year
+    let totalWeeks = 53;
+    
+    // Check if year has 53 weeks by checking if Dec 31 falls in week 53
+    const dec31Week = this.getISOWeekNumber(lastDay);
+    if (dec31Week === 53 || (dec31Week === 52 && this.getISOWeekNumber(new Date(year, 11, 30)) === 53)) {
+      totalWeeks = 53;
+    } else {
+      totalWeeks = 52;
+    }
+    
+    // Generate weeks 1 through totalWeeks
+    for (let week = 1; week <= totalWeeks; week++) {
+      weeks.push(week);
+    }
+    
+    return weeks;
+  }
+  
+  // ISO week number calculation
+  getISOWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+  
+  // Load weeks for selected year
+  weeksInSelectedYear: number[] = [];
+  
+  loadWeeksForYear() {
+    this.weeksInSelectedYear = this.getWeeksInYear(this.selectedYear);
+  }
+  
+  // Load productivity data for selected week
+  loadProductivityForWeek() {
+    if (this.selectedWeek === null) return;
+    
+    this.isLoading = true;
+    this.errorMessage = '';
+    
+    const filterParams: any = {
+      page: 1,
+      limit: 100 // Get all records for the week
+    };
+    
+    if (this.userRole === 'manager') {
+      // For managers, filter by week number
+      this.productivityService.getAllProductivityData(filterParams).subscribe({
+        next: (allData) => {
+          if (allData?.status === 'success' && allData.data?.productivityData) {
+            // Filter by week number (use stored week from database)
+            const weekData = allData.data.productivityData.filter((record: ProductivityData) => {
+              const recordWeek = this.getWeekFromData(record);
+              return recordWeek === this.selectedWeek;
+            });
+            this.productivityData = weekData;
+            this.allProductivityData = weekData;
+            this.applyColumnFilters();
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading week data:', error);
+          this.errorMessage = 'Failed to load productivity data for this week';
+          this.isLoading = false;
+        }
+      });
+    } else {
+      // For users, use their endpoint
+      this.productivityService.getMyProductivityData(1, 100).subscribe({
+        next: (response) => {
+          if (response.status === 'success' && response.data?.productivityData) {
+            const weekData = response.data.productivityData.filter((record: ProductivityData) => {
+              const recordWeek = this.getWeekFromData(record);
+              return recordWeek === this.selectedWeek;
+            });
+            this.productivityData = weekData;
+            this.allProductivityData = weekData;
+            this.applyColumnFilters();
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading week data:', error);
+          this.errorMessage = 'Failed to load your productivity data for this week';
+          this.isLoading = false;
+        }
+      });
+    }
   }
 
   // Get pagination pages array (to prevent infinite change detection)

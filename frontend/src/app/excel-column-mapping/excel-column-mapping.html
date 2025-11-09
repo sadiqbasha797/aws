@@ -1,0 +1,119 @@
+<div class="excel-mapping-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-table"></i>
+      Excel Column Mapping
+    </h1>
+    <p class="page-subtitle">Map your Excel columns to the expected columns</p>
+  </div>
+
+  <!-- Success Message -->
+  <div class="success-message" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <div *ngIf="uploadData" class="mapping-content">
+    <!-- Information Box -->
+    <div class="info-box">
+      <h3><i class="fas fa-info-circle"></i> Instructions</h3>
+      <ul>
+        <li>Below are the expected columns (accepted columns) and the columns from your uploaded Excel file.</li>
+        <li>For each expected column, select the corresponding column from your Excel file.</li>
+        <li>Required columns (marked with *) must be mapped.</li>
+        <li>You can preview the mapped data before uploading.</li>
+      </ul>
+    </div>
+
+    <!-- Column Mapping Section -->
+    <div class="mapping-section">
+      <h2>Column Mapping</h2>
+      
+      <div class="mapping-table">
+        <div class="mapping-header">
+          <div class="header-cell expected">Expected Column</div>
+          <div class="header-cell uploaded">Your Excel Column</div>
+        </div>
+        
+        <div class="mapping-row" *ngFor="let mapping of columnMappings">
+          <div class="mapping-cell expected">
+            <span class="column-name">{{ mapping.displayName }}</span>
+            <span class="required-badge" *ngIf="isRequiredColumn(mapping.acceptedColumn)">*</span>
+          </div>
+          <div class="mapping-cell uploaded">
+            <select 
+              [(ngModel)]="mapping.uploadedColumn"
+              (change)="onMappingChange()"
+              class="column-select">
+              <option value="">-- Select Column --</option>
+              <option *ngFor="let col of uploadedColumns" [value]="col">
+                {{ col }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="preview-section" *ngIf="previewData.length > 0">
+      <h2>Data Preview (First 5 rows)</h2>
+      <div class="preview-table">
+        <table>
+          <thead>
+            <tr>
+              <th *ngFor="let mapping of getMappedColumns()">
+                {{ mapping.displayName }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of previewData">
+              <td *ngFor="let mapping of getMappedColumns()">
+                {{ formatPreviewValue(row[mapping.acceptedColumn], mapping.acceptedColumn) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        (click)="processAndUpload()"
+        [disabled]="isUploading || !isAllRequiredMapped()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isUploading"></i>
+        <i class="fas fa-upload" *ngIf="!isUploading"></i>
+        {{ isUploading ? 'Uploading...' : 'Upload Data' }}
+      </button>
+      
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary"
+        (click)="goBack()"
+        [disabled]="isUploading">
+        <i class="fas fa-arrow-left"></i>
+        Go Back
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!uploadData" class="no-data-message">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>No Excel data found. Please go back and upload a file.</p>
+    <button class="btn btn-primary" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i>
+      Go Back
+    </button>
+  </div>
+</div>
+

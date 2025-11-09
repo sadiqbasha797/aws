@@ -12,7 +12,8 @@ const {
   getProductivityByWeek,
   getProductivityByMonth,
   getTeamMemberProductivityHistory,
-  getPerformanceTrends
+  getPerformanceTrends,
+  bulkCreateProductivityData
 } = require('../controllers/productivityController');
 const { protect, restrictTo, checkActive } = require('../middleware/auth');
 
@@ -39,6 +40,7 @@ router.get('/month/:year/:month', getProductivityByMonth);
 router.get('/team-member/:associateName/history', getTeamMemberProductivityHistory);
 router.get('/:id', getProductivityData);
 router.post('/', createProductivityData);
+router.post('/bulk', bulkCreateProductivityData);
 router.patch('/:id', updateProductivityData);
 router.delete('/:id', deleteProductivityData);
 
