@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from './environment';
 
 export interface QuickLink {
   _id: string;
@@ -41,7 +42,7 @@ export interface QuickLinkCreateRequest {
   providedIn: 'root'
 })
 export class QuickLinkService {
-  private baseUrl = 'http://localhost:7000/api/quick-links';
+  private baseUrl = `${environment.baseUrl}/quick-links`;
 
   constructor(private http: HttpClient) { }
 

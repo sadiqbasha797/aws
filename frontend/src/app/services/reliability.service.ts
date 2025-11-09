@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from './environment';
 
 export interface ReliabilityData {
   _id?: string;
@@ -73,7 +74,7 @@ export interface ReliabilityResponse {
   providedIn: 'root'
 })
 export class ReliabilityService {
-  private baseUrl = 'http://localhost:7000/api/reliability';
+  private baseUrl = `${environment.baseUrl}/reliability`;
 
   constructor(
     private http: HttpClient,

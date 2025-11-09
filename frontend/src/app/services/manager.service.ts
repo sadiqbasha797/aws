@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from './environment';
 
 export interface Manager {
   id?: string;
@@ -30,7 +31,7 @@ export interface ManagerResponse {
   providedIn: 'root'
 })
 export class ManagerService {
-  private baseUrl = 'http://localhost:7000/api/managers';
+  private baseUrl = `${environment.baseUrl}/managers`;
 
   constructor(
     private http: HttpClient,

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from './environment';
 
 export interface SOP {
   _id: string;
@@ -113,7 +114,7 @@ export interface BinItem {
   providedIn: 'root'
 })
 export class SOPService {
-  private baseUrl = 'http://localhost:7000/api/sops';
+  private baseUrl = `${environment.baseUrl}/sops`;
 
   constructor(private http: HttpClient) { }
 
@@ -212,7 +213,7 @@ export class SOPService {
   // Download document (returns blob)
   downloadDocument(key: string): Observable<Blob> {
     const encodedKey = encodeURIComponent(key);
-    return this.http.get(`http://localhost:7000/api/files/download/${encodedKey}`, {
+    return this.http.get(`${environment.baseUrl}/files/download/${encodedKey}`, {
       headers: this.getHeaders(),
       responseType: 'blob'
     });
@@ -221,7 +222,7 @@ export class SOPService {
   // Get document view URL (returns presigned URL for viewing in new tab)
   getDocumentViewUrl(key: string): Observable<string> {
     const encodedKey = encodeURIComponent(key);
-    return this.http.get<{url: string}>(`http://localhost:7000/api/files/url/${encodedKey}`, {
+    return this.http.get<{url: string}>(`${environment.baseUrl}/files/url/${encodedKey}`, {
       headers: this.getHeaders()
     }).pipe(
       map(response => response.url)

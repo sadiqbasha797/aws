@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from './environment';
 
 export interface ProductivityData {
   _id?: string;
@@ -64,7 +65,7 @@ export interface ProductivityResponse {
   providedIn: 'root'
 })
 export class ProductivityService {
-  private baseUrl = 'http://localhost:7000/api/productivity';
+  private baseUrl = `${environment.baseUrl}/productivity`;
 
   constructor(
     private http: HttpClient,

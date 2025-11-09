@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from './environment';
 
 export interface AuditDoc {
   _id?: string;
@@ -38,7 +39,7 @@ export interface AuditDocResponse {
   providedIn: 'root'
 })
 export class AuditDocService {
-  private baseUrl = 'http://localhost:7000/api/audit-docs';
+  private baseUrl = `${environment.baseUrl}/audit-docs`;
 
   constructor(
     private http: HttpClient,
