@@ -183,10 +183,10 @@
     </div>
 
     <!-- Processes Grid -->
-    <div *ngIf="processes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div *ngIf="processes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-8">
       <div 
         *ngFor="let process of processes" 
-        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group"
+        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full"
         (click)="selectProcess(process.processName)">
         
         <!-- Card Header -->
@@ -243,10 +243,10 @@
   <!-- SOPs List View (when process is selected) -->
   <div *ngIf="!loading && !error && selectedProcess">
     <!-- SOPs Grid -->
-    <div *ngIf="processSOPs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div *ngIf="processSOPs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-8">
       <div 
         *ngFor="let sop of processSOPs" 
-        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group"
+        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full"
         (click)="viewSOP(sop)">
         
         <!-- Card Header -->
@@ -435,65 +435,66 @@
     </div>
 
     <!-- Quick Links Grid -->
-    <div *ngIf="!quickLinksLoading && !quickLinksError && quickLinks.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div *ngIf="!quickLinksLoading && !quickLinksError && quickLinks.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
       <div 
         *ngFor="let quickLink of quickLinks" 
-        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 group">
+        class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 group flex flex-col max-w-xs mx-auto w-full">
         
-        <!-- Card Header -->
-        <div class="p-6 pb-4">
-          <div class="flex items-start justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2 flex-1">
+        <!-- Card Content -->
+        <div class="p-4 flex-1 flex flex-col">
+          <!-- Title -->
+          <div class="mb-2">
+            <h3 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2">
               {{ quickLink.title }}
             </h3>
           </div>
 
           <!-- Link Preview -->
-          <div class="mb-4">
+          <div class="mb-3 flex-1">
             <a 
               [href]="quickLink.link" 
               target="_blank"
               (click)="openLink(quickLink.link); $event.stopPropagation()"
-              class="text-sm text-blue-600 hover:text-blue-700 hover:underline truncate block">
-              <i class="fas fa-external-link-alt mr-1"></i>
-              {{ quickLink.link }}
+              class="text-xs text-blue-600 hover:text-blue-700 hover:underline truncate block">
+              <i class="fas fa-external-link-alt mr-1 text-xs"></i>
+              <span class="truncate">{{ quickLink.link }}</span>
             </a>
           </div>
 
           <!-- Meta Information -->
-          <div class="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-4">
-            <div class="flex items-center space-x-1">
-              <i class="fas fa-user w-3"></i>
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+            <div class="flex items-center space-x-1 truncate">
+              <i class="fas fa-user text-xs"></i>
               <span class="truncate">{{ quickLink.createdBy.name || 'Unknown' }}</span>
             </div>
-            <div class="flex items-center space-x-1">
-              <i class="fas fa-calendar w-3"></i>
+            <div class="flex items-center space-x-1 ml-2">
+              <i class="fas fa-calendar text-xs"></i>
               <span>{{ formatDate(quickLink.createdAt) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Card Footer -->
-        <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex items-center justify-between">
+        <div class="px-4 py-3 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-between">
           <button 
             (click)="openLink(quickLink.link)"
-            class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 group-hover:text-blue-700">
-            <i class="fas fa-external-link-alt"></i>
-            <span>Open Link</span>
+            class="text-blue-600 hover:text-blue-700 font-medium text-xs flex items-center space-x-1 group-hover:text-blue-700">
+            <i class="fas fa-external-link-alt text-xs"></i>
+            <span>Open</span>
           </button>
           
-          <div class="flex items-center space-x-2" *ngIf="canEditQuickLink(quickLink)">
+          <div class="flex items-center space-x-1" *ngIf="canEditQuickLink(quickLink)">
             <button 
               (click)="editQuickLink(quickLink); $event.stopPropagation()"
-              class="text-gray-600 hover:text-blue-600 p-2 rounded transition-colors duration-200"
+              class="text-gray-500 hover:text-blue-600 p-1.5 rounded transition-colors duration-200"
               title="Edit">
-              <i class="fas fa-edit"></i>
+              <i class="fas fa-edit text-xs"></i>
             </button>
             <button 
               (click)="deleteQuickLink(quickLink); $event.stopPropagation()"
-              class="text-gray-600 hover:text-red-600 p-2 rounded transition-colors duration-200"
+              class="text-gray-500 hover:text-red-600 p-1.5 rounded transition-colors duration-200"
               title="Delete">
-              <i class="fas fa-trash"></i>
+              <i class="fas fa-trash text-xs"></i>
             </button>
           </div>
         </div>

@@ -63,9 +63,9 @@
     <!-- Bin Items -->
     <div *ngIf="!loading && !error" class="max-w-7xl mx-auto">
       <!-- Items Grid -->
-      <div *ngIf="binItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngIf="binItems.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
         <div *ngFor="let item of binItems" 
-             class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+             class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 max-w-sm mx-auto w-full">
           <!-- Item Header -->
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center space-x-3">

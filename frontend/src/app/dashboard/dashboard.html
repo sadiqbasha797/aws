@@ -43,7 +43,7 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       <!-- Total SOPs -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6" (click)="navigateToSOPs()">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6 w-full" (click)="navigateToSOPs()">
         <div class="flex items-center">
           <div class="p-3 bg-orange-100 rounded-lg">
             <i class="fas fa-file-alt text-orange-600 text-xl"></i>
@@ -57,7 +57,7 @@
       </div>
 
       <!-- Team Members -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6" (click)="navigateToTeamManagement()">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6 w-full" (click)="navigateToTeamManagement()">
         <div class="flex items-center">
           <div class="p-3 bg-blue-100 rounded-lg">
             <i class="fas fa-users text-blue-600 text-xl"></i>
@@ -71,7 +71,7 @@
       </div>
 
       <!-- Average Productivity -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6" (click)="navigateToProductivity()">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6 w-full" (click)="navigateToProductivity()">
         <div class="flex items-center">
           <div class="p-3 bg-green-100 rounded-lg">
             <i class="fas fa-bolt text-green-600 text-xl"></i>
@@ -85,7 +85,7 @@
       </div>
 
       <!-- Average Reliability -->
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6" (click)="navigateToReliability()">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer p-6 w-full" (click)="navigateToReliability()">
         <div class="flex items-center">
           <div class="p-3 bg-purple-100 rounded-lg">
             <i class="fas fa-check-circle text-purple-600 text-xl"></i>
@@ -175,9 +175,8 @@
         </div>
       </div>
 
-      <!-- Quick Actions & System Info -->
+      <!-- Quick Actions -->
       <div class="space-y-6">
-        <!-- Quick Actions -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
           <div class="space-y-3">
@@ -197,41 +196,6 @@
               <i class="fas fa-check-circle mr-2"></i>
               View Reliability
             </button>
-          </div>
-        </div>
-
-        <!-- System Info -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">System Info</h3>
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-              <span class="text-gray-600 flex items-center">
-                <i class="fas fa-user-tie mr-2 text-gray-400"></i>
-                Managers
-              </span>
-              <span class="font-medium text-gray-900">{{ stats.managers.total }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-              <span class="text-gray-600 flex items-center">
-                <i class="fas fa-trash mr-2 text-gray-400"></i>
-                Items in Bin
-              </span>
-              <span class="font-medium text-gray-900">{{ stats.bin.itemsInBin }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-              <span class="text-gray-600 flex items-center">
-                <i class="fas fa-bolt mr-2 text-gray-400"></i>
-                Productivity Records
-              </span>
-              <span class="font-medium text-gray-900">{{ stats.productivity.totalRecords }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-              <span class="text-gray-600 flex items-center">
-                <i class="fas fa-check-circle mr-2 text-gray-400"></i>
-                Reliability Records
-              </span>
-              <span class="font-medium text-gray-900">{{ stats.reliability.totalRecords }}</span>
-            </div>
           </div>
         </div>
       </div>

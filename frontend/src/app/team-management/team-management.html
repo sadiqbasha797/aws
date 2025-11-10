@@ -38,9 +38,9 @@
     </div>
 
     <!-- Members Grid -->
-    <div *ngIf="!loadingMembers && teamMembers && teamMembers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngIf="!loadingMembers && teamMembers && teamMembers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
       <div *ngFor="let member of teamMembers" 
-           class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group">
+           class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full">
         
         <!-- Card Content -->
         <div class="p-6">
@@ -71,10 +71,6 @@
             <div *ngIf="member.position" class="flex items-center text-sm text-gray-600">
               <i class="fas fa-briefcase mr-2 w-4"></i>
               <span>{{ member.position }}</span>
-            </div>
-            <div *ngIf="member.phone" class="flex items-center text-sm text-gray-600">
-              <i class="fas fa-phone mr-2 w-4"></i>
-              <span>{{ member.phone }}</span>
             </div>
           </div>
         </div>

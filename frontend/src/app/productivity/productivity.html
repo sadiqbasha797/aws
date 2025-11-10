@@ -48,7 +48,7 @@
     </div>
   </div>
 
-  <!-- Calendar Navigation: Year View (Weeks) -->
+  <!-- Calendar Navigation: Year View (Week Selector) -->
   <div *ngIf="calendarView === 'year'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -62,16 +62,53 @@
           <i class="fas fa-list"></i>
           <span>Show All</span>
         </button>
-        <button (click)="selectedYear = selectedYear - 1; loadWeeksForYear()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+        <button (click)="changeYear('prev')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
           <i class="fas fa-chevron-left"></i>
         </button>
         <span class="px-3 py-1 text-sm font-medium text-gray-700">{{ selectedYear }}</span>
-        <button (click)="selectedYear = selectedYear + 1; loadWeeksForYear()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
+        <button (click)="changeYear('next')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
           <i class="fas fa-chevron-right"></i>
         </button>
       </div>
     </div>
     <div class="p-6">
+      <!-- Week Selector (Default View) -->
+      <div *ngIf="!showWeekGrid" class="flex flex-col items-center space-y-4">
+        <div class="w-full max-w-md">
+          <label for="week-selector" class="block text-sm font-medium text-gray-700 mb-2">
+            Select a Week
+          </label>
+          <div class="flex items-center gap-3">
+            <select 
+              id="week-selector"
+              [(ngModel)]="selectedWeek" 
+              (change)="selectWeekFromDropdown()"
+              class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+              <option [ngValue]="null">Select a week...</option>
+              <option *ngFor="let week of weekOptions" [ngValue]="week">
+                Week {{ week }}
+              </option>
+            </select>
+            <button 
+              (click)="toggleWeekGrid()" 
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+              <i class="fas fa-th"></i>
+              <span>Show All Weeks</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week Grid (Optional View) -->
+      <div *ngIf="showWeekGrid">
+        <div class="mb-4 flex justify-end">
+          <button 
+            (click)="toggleWeekGrid()" 
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+            <i class="fas fa-times"></i>
+            <span>Hide Grid</span>
+          </button>
+        </div>
       <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
         <button 
           *ngFor="let week of weeksInSelectedYear" 
@@ -96,6 +133,7 @@
       </div>
       <div *ngIf="weeksInSelectedYear.length === 0" class="text-center py-8 text-gray-500">
         No weeks available for this year
+        </div>
       </div>
     </div>
   </div>
@@ -649,8 +687,8 @@
   <!-- Team Overview (hidden in simplified UI) -->
   <div *ngIf="false">
     <!-- Performance Stats -->
-    <div *ngIf="productivityStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6">
+    <div *ngIf="productivityStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center">
           <div class="p-3 bg-blue-100 rounded-lg">
             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -678,7 +716,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center">
           <div class="p-3 bg-orange-100 rounded-lg">
             <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -692,7 +730,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-200 transition-all duration-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center">
           <div class="p-3 bg-red-100 rounded-lg">
             <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -707,9 +745,9 @@
       </div>
     </div> 
    <!-- Team Member Cards (Aggregated View) -->
-    <div *ngIf="showAggregatedView && productivityData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngIf="showAggregatedView && productivityData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
       <div *ngFor="let member of productivityData" 
-           class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-orange-300 transition-all cursor-pointer"
+           class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-orange-300 transition-all cursor-pointer max-w-sm mx-auto w-full"
            (click)="selectTeamMember(member)">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center">

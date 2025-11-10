@@ -101,7 +101,7 @@ const getAuditDoc = async (req, res) => {
 // Create audit doc (Manager only)
 const createAuditDoc = async (req, res) => {
   try {
-    const { date } = req.body;
+    const { date, process } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -125,7 +125,7 @@ const createAuditDoc = async (req, res) => {
     const key = `audit-docs/${Date.now()}-${file.originalname}`;
     const uploadResult = await uploadFile(key, file.buffer, file.mimetype);
 
-    const auditDoc = await AuditDoc.create({
+    const auditDocData = {
       document: {
         filename: file.originalname,
         originalName: file.originalname,
@@ -137,7 +137,13 @@ const createAuditDoc = async (req, res) => {
       date: new Date(date),
       createdBy,
       managerId
-    });
+    };
+
+    if (process) {
+      auditDocData.process = process;
+    }
+
+    const auditDoc = await AuditDoc.create(auditDocData);
 
     res.status(201).json({
       status: 'success',
@@ -158,7 +164,7 @@ const createAuditDoc = async (req, res) => {
 // Update audit doc (Manager only)
 const updateAuditDoc = async (req, res) => {
   try {
-    const { date } = req.body;
+    const { date, process } = req.body;
 
     const auditDoc = await AuditDoc.findById(req.params.id);
 
@@ -206,6 +212,10 @@ const updateAuditDoc = async (req, res) => {
 
     if (date !== undefined) {
       updateData.date = new Date(date);
+    }
+
+    if (process !== undefined) {
+      updateData.process = process;
     }
 
     const updatedAuditDoc = await AuditDoc.findByIdAndUpdate(

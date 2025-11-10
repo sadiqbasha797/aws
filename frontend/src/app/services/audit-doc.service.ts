@@ -15,6 +15,7 @@ export interface AuditDoc {
     mimeType: string;
   };
   date: Date | string;
+  process?: string;
   createdBy: string;
   managerId?: string;
   isActive?: boolean;
@@ -85,10 +86,13 @@ export class AuditDocService {
     });
   }
 
-  createAuditDoc(file: File, date: string): Observable<AuditDocResponse> {
+  createAuditDoc(file: File, date: string, process?: string): Observable<AuditDocResponse> {
     const formData = new FormData();
     formData.append('document', file);
     formData.append('date', date);
+    if (process) {
+      formData.append('process', process);
+    }
 
     const token = this.authService.getToken();
     const headers = new HttpHeaders({
@@ -101,13 +105,16 @@ export class AuditDocService {
     });
   }
 
-  updateAuditDoc(id: string, file: File | null, date?: string): Observable<AuditDocResponse> {
+  updateAuditDoc(id: string, file: File | null, date?: string, process?: string): Observable<AuditDocResponse> {
     const formData = new FormData();
     if (file) {
       formData.append('document', file);
     }
     if (date) {
       formData.append('date', date);
+    }
+    if (process !== undefined) {
+      formData.append('process', process);
     }
 
     const token = this.authService.getToken();

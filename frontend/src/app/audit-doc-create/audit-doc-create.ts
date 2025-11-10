@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuditDocService, AuditDoc } from '../services/audit-doc.service';
 import { AuthService } from '../services/auth.service';
+import { ProcessService, Process } from '../services/process.service';
 
 @Component({
   selector: 'app-audit-doc-create',
@@ -21,26 +22,54 @@ export class AuditDocCreateComponent implements OnInit {
 
   auditDocForm = {
     file: null as File | null,
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    process: ''
   };
 
   selectedFile: File | null = null;
   existingAuditDoc: AuditDoc | null = null;
+  availableProcesses: Process[] = [];
 
   constructor(
     private auditDocService: AuditDocService,
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private processService: ProcessService
   ) {}
 
   ngOnInit() {
+    // Load available processes
+    this.loadProcesses();
+    
+    // Check for process query parameter
+    this.route.queryParams.subscribe(queryParams => {
+      if (queryParams['process']) {
+        this.auditDocForm.process = queryParams['process'];
+      }
+    });
+    
     // Check if we're in edit mode
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.isEditMode = true;
         this.editingId = params['id'];
         this.loadAuditDoc();
+      }
+    });
+  }
+
+  loadProcesses() {
+    this.processService.getAllProcesses({ limit: 1000 }).subscribe({
+      next: (response) => {
+        if (response.status === 'success' && response.data?.processes) {
+          this.availableProcesses = response.data.processes;
+          // Sort processes by name
+          this.availableProcesses.sort((a, b) => a.name.localeCompare(b.name));
+        }
+      },
+      error: (error) => {
+        console.error('Error loading processes:', error);
       }
     });
   }
@@ -54,6 +83,7 @@ export class AuditDocCreateComponent implements OnInit {
         if (response.status === 'success' && response.data?.auditDoc) {
           this.existingAuditDoc = response.data.auditDoc;
           this.auditDocForm.date = new Date(response.data.auditDoc.date).toISOString().split('T')[0];
+          this.auditDocForm.process = response.data.auditDoc.process || '';
         }
         this.loading = false;
       },
@@ -100,11 +130,13 @@ export class AuditDocCreateComponent implements OnInit {
       ? this.auditDocService.updateAuditDoc(
           this.editingId,
           this.auditDocForm.file,
-          this.auditDocForm.date
+          this.auditDocForm.date,
+          this.auditDocForm.process || undefined
         )
       : this.auditDocService.createAuditDoc(
           this.auditDocForm.file!,
-          this.auditDocForm.date
+          this.auditDocForm.date,
+          this.auditDocForm.process || undefined
         );
 
     operation.subscribe({

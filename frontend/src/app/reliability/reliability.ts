@@ -109,6 +109,7 @@ export class Reliability implements OnInit {
   selectedProcessForView: ProcessGroup | null = null;
   selectedJobGroupForView: JobGroup | null = null;
   showAllRecordsTable = false;
+  processViewTab: 'jobIds' | 'audit' = 'jobIds'; // Tab within process view
   
   // Form for creating/editing reliability data
   reliabilityForm: Partial<ReliabilityData> = {
@@ -1011,6 +1012,18 @@ export class Reliability implements OnInit {
     if (processGroup) {
       this.selectedProcessForView = processGroup;
       this.currentView = 'jobIds';
+      this.processViewTab = 'jobIds'; // Default to job IDs tab
+      // Load audit docs for this process when manager clicks on process
+      if (this.userRole === 'manager') {
+        this.loadAuditDocs();
+      }
+    }
+  }
+
+  setProcessViewTab(tab: 'jobIds' | 'audit') {
+    this.processViewTab = tab;
+    if (tab === 'audit' && this.userRole === 'manager') {
+      this.loadAuditDocs();
     }
   }
 
@@ -1032,6 +1045,7 @@ export class Reliability implements OnInit {
     this.currentView = 'processes';
     this.selectedProcessForView = null;
     this.selectedJobGroupForView = null;
+    this.processViewTab = 'jobIds'; // Reset to default tab
   }
 
   backToJobIds() {
@@ -1398,8 +1412,12 @@ export class Reliability implements OnInit {
   }
 
   showCreateAuditDocForm() {
-    // Navigate to separate create page
-    this.router.navigate(['/audit-docs/create']);
+    // Navigate to separate create page, passing process name if available
+    const queryParams: any = {};
+    if (this.selectedProcessForView?.processName) {
+      queryParams.process = this.selectedProcessForView.processName;
+    }
+    this.router.navigate(['/audit-docs/create'], { queryParams });
   }
 
   editAuditDoc(auditDoc: AuditDoc) {

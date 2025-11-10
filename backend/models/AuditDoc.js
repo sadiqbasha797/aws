@@ -36,6 +36,10 @@ const auditDocSchema = new mongoose.Schema({
     required: [true, 'Date is required'],
     default: Date.now
   },
+  process: {
+    type: String,
+    trim: true
+  },
   createdBy: {
     type: String,
     required: [true, 'Created by is required'],
@@ -63,6 +67,7 @@ auditDocSchema.index({ date: -1 });
 auditDocSchema.index({ createdBy: 1 });
 auditDocSchema.index({ isActive: 1 });
 auditDocSchema.index({ managerId: 1, isActive: 1 });
+auditDocSchema.index({ process: 1 });
 
 module.exports = mongoose.model('AuditDoc', auditDocSchema);
 

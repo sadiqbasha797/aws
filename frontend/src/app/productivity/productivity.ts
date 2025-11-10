@@ -71,6 +71,7 @@ export class Productivity implements OnInit {
   calendarView: 'year' | 'week' | 'all' = 'year';
   selectedYear: number = new Date().getFullYear();
   selectedWeek: number | null = null;
+  showWeekGrid = false; // Control whether to show all weeks in grid or just selector
   
   // Pagination
   currentPage = 1;
@@ -142,7 +143,8 @@ export class Productivity implements OnInit {
     // Initialize calendar view first
     this.calendarView = 'year';
     this.selectedYear = new Date().getFullYear();
-    this.loadWeeksForYear();
+    this.showWeekGrid = false; // Don't show week grid initially
+    // Don't load weeks initially - user will select via dropdown
     // Then initialize component (which may try to load data, but will be blocked by calendar view check)
     this.initializeComponent();
   }
@@ -737,6 +739,31 @@ export class Productivity implements OnInit {
     this.calendarView = 'year';
     this.selectedWeek = null;
     this.productivityData = [];
+    this.showWeekGrid = false; // Reset to not show grid when going back
+  }
+
+  toggleWeekGrid() {
+    this.showWeekGrid = !this.showWeekGrid;
+    if (this.showWeekGrid) {
+      this.loadWeeksForYear(); // Load weeks when showing grid
+    }
+  }
+
+  selectWeekFromDropdown() {
+    if (this.selectedWeek !== null) {
+      this.selectWeek(this.selectedWeek);
+    }
+  }
+
+  changeYear(direction: 'prev' | 'next') {
+    if (direction === 'prev') {
+      this.selectedYear = this.selectedYear - 1;
+    } else {
+      this.selectedYear = this.selectedYear + 1;
+    }
+    if (this.showWeekGrid) {
+      this.loadWeeksForYear();
+    }
   }
   
   // Show all productivity data (bypass calendar)

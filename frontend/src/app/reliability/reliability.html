@@ -62,10 +62,93 @@
         <i class="fas fa-chart-line mr-2"></i>
         Overview
       </button>
+    </nav>
+  </div>
+
+  <!-- Hierarchical Records View: Process -> Job ID -> Records -->
+  <div *ngIf="activeTab === 'overview'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-sitemap text-orange-500 mr-2"></i>
+        Reliability Records - All Data
+      </h3>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-600">Week</label>
+          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
+            <option [ngValue]="undefined">All</option>
+            <option *ngFor="let w of getWeekOptions()" [ngValue]="w">{{ w }}</option>
+          </select>
+        </div>
+        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
+        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
+      </div>
+    </div>
+    <div class="p-6">
+      <!-- Processes View -->
+      <div *ngIf="currentView === 'processes'">
+        <!-- Process Cards -->
+        <div *ngIf="processGroups.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mb-6">
+          <div *ngFor="let processGroup of processGroups" 
+               (click)="toggleProcess(processGroup.processName)"
+               class="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5 cursor-pointer hover:shadow-lg hover:border-orange-300 transition-all duration-200 max-w-sm mx-auto w-full">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-cogs text-white text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-gray-900 text-lg">{{ processGroup.processName }}</h4>
+                  <p class="text-sm text-gray-600 mt-1">
+                    <i class="fas fa-briefcase mr-1"></i>
+                    {{ processGroup.jobGroups.length }} job{{ processGroup.jobGroups.length !== 1 ? 's' : '' }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-chevron-right text-orange-600 text-lg transition-transform duration-200"></i>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-3 mt-3">
+              <div class="text-2xl font-bold text-orange-600">{{ getTotalRecordsForProcess(processGroup) }}</div>
+              <div class="text-xs text-gray-600 uppercase tracking-wide">Total Records</div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="processGroups.length === 0 && !isLoading" class="text-center py-12">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">No reliability data found</h3>
+          <p class="text-gray-600">Data will appear here once available.</p>
+        </div>
+      </div>
+
+      <!-- Job IDs View -->
+      <div *ngIf="currentView === 'jobIds' && selectedProcessForView">
+        <div class="mb-6">
+          <button (click)="backToProcesses()" class="mb-4 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Processes</span>
+          </button>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-folder-open text-orange-500 mr-2"></i>
+            {{ selectedProcessForView.processName }}
+          </h3>
+        </div>
+
+        <!-- Tabs within process view -->
+        <div class="mb-6 border-b border-gray-200">
+          <nav class="flex space-x-8">
+            <button
+              (click)="setProcessViewTab('jobIds')"
+              [class]="processViewTab === 'jobIds' 
+                ? 'border-b-2 border-orange-500 text-orange-600 font-medium py-4 px-1' 
+                : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
+              <i class="fas fa-tag mr-2"></i>
+              Production
+            </button>
       <button
         *ngIf="userRole === 'manager'"
-        (click)="setActiveTab('audit-docs')"
-        [class]="activeTab === 'audit-docs' 
+              (click)="setProcessViewTab('audit')"
+              [class]="processViewTab === 'audit' 
           ? 'border-b-2 border-blue-500 text-blue-600 font-medium py-4 px-1' 
           : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
         <i class="fas fa-file-alt mr-2"></i>
@@ -74,12 +157,38 @@
     </nav>
   </div>
 
-  <!-- Audit Docs Section (Manager Only) -->
-  <div *ngIf="userRole === 'manager' && activeTab === 'audit-docs'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <!-- Job IDs Content -->
+        <div *ngIf="processViewTab === 'jobIds'">
+          <p class="text-sm text-gray-600 mb-4">{{ selectedProcessForView.jobGroups.length }} job{{ selectedProcessForView.jobGroups.length !== 1 ? 's' : '' }}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <div *ngFor="let jobGroup of selectedProcessForView.jobGroups" 
+                 (click)="toggleJobId(selectedProcessForView.processName, jobGroup.jobId)"
+                 class="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 max-w-xs mx-auto w-full">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <div class="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-tag text-white"></i>
+                  </div>
+                  <span class="font-semibold text-gray-800 text-sm">{{ jobGroup.jobId }}</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-chevron-right text-gray-600 text-sm transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg p-2 mt-2">
+                <div class="text-lg font-bold text-gray-700">{{ jobGroup.records.length }}</div>
+                <div class="text-xs text-gray-600">Record{{ jobGroup.records.length !== 1 ? 's' : '' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Docs Content -->
+        <div *ngIf="processViewTab === 'audit' && userRole === 'manager'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
       <h3 class="text-lg font-semibold text-gray-900">
         <i class="fas fa-file-alt text-orange-500 mr-2"></i>
-        Audit Documents
+              Audit Documents - {{ selectedProcessForView.processName }}
       </h3>
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2">
@@ -117,6 +226,7 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
@@ -133,6 +243,7 @@
                 </a>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatAuditDocDate(auditDoc.date) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.process || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.createdBy }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatAuditDocTimestamp(auditDoc.createdAt!) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatAuditDocTimestamp(auditDoc.updatedAt!) }}</td>
@@ -156,7 +267,7 @@
               </td>
             </tr>
             <tr *ngIf="auditDocs.length === 0 && !isLoading">
-              <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                 <i class="fas fa-file-alt text-4xl mb-4 text-gray-300"></i>
                 <p class="text-lg font-semibold">No audit documents found</p>
                 <p class="text-sm mt-2">Click "Add Audit Doc" to create your first audit document</p>
@@ -211,98 +322,6 @@
             </button>
           </nav>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hierarchical Records View: Process -> Job ID -> Records -->
-  <div *ngIf="activeTab === 'overview'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900">
-        <i class="fas fa-sitemap text-orange-500 mr-2"></i>
-        Reliability Records - All Data
-      </h3>
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600">Week</label>
-          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
-            <option [ngValue]="undefined">All</option>
-            <option *ngFor="let w of getWeekOptions()" [ngValue]="w">{{ w }}</option>
-          </select>
-        </div>
-        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
-        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
-      </div>
-    </div>
-    <div class="p-6">
-      <!-- Processes View -->
-      <div *ngIf="currentView === 'processes'">
-        <!-- Process Cards -->
-        <div *ngIf="processGroups.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <div *ngFor="let processGroup of processGroups" 
-               (click)="toggleProcess(processGroup.processName)"
-               class="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5 cursor-pointer hover:shadow-lg hover:border-orange-300 transition-all duration-200">
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-cogs text-white text-xl"></i>
-                </div>
-                <div>
-                  <h4 class="font-bold text-gray-900 text-lg">{{ processGroup.processName }}</h4>
-                  <p class="text-sm text-gray-600 mt-1">
-                    <i class="fas fa-briefcase mr-1"></i>
-                    {{ processGroup.jobGroups.length }} job{{ processGroup.jobGroups.length !== 1 ? 's' : '' }}
-                  </p>
-                </div>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-chevron-right text-orange-600 text-lg transition-transform duration-200"></i>
-              </div>
-            </div>
-            <div class="bg-white rounded-lg p-3 mt-3">
-              <div class="text-2xl font-bold text-orange-600">{{ getTotalRecordsForProcess(processGroup) }}</div>
-              <div class="text-xs text-gray-600 uppercase tracking-wide">Total Records</div>
-            </div>
-          </div>
-        </div>
-        <div *ngIf="processGroups.length === 0 && !isLoading" class="text-center py-12">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">No reliability data found</h3>
-          <p class="text-gray-600">Data will appear here once available.</p>
-        </div>
-      </div>
-
-      <!-- Job IDs View -->
-      <div *ngIf="currentView === 'jobIds' && selectedProcessForView">
-        <div class="mb-6">
-          <button (click)="backToProcesses()" class="mb-4 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2">
-            <i class="fas fa-arrow-left"></i>
-            <span>Back to Processes</span>
-          </button>
-          <h3 class="text-xl font-bold text-gray-900 mb-2">
-            <i class="fas fa-folder-open text-orange-500 mr-2"></i>
-            {{ selectedProcessForView.processName }} - Job IDs
-          </h3>
-          <p class="text-sm text-gray-600 mb-4">{{ selectedProcessForView.jobGroups.length }} job{{ selectedProcessForView.jobGroups.length !== 1 ? 's' : '' }}</p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div *ngFor="let jobGroup of selectedProcessForView.jobGroups" 
-               (click)="toggleJobId(selectedProcessForView.processName, jobGroup.jobId)"
-               class="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-tag text-white"></i>
-                </div>
-                <span class="font-semibold text-gray-800 text-sm">{{ jobGroup.jobId }}</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-chevron-right text-gray-600 text-sm transition-transform duration-200"></i>
-              </div>
-            </div>
-            <div class="bg-white rounded-lg p-2 mt-2">
-              <div class="text-lg font-bold text-gray-700">{{ jobGroup.records.length }}</div>
-              <div class="text-xs text-gray-600">Record{{ jobGroup.records.length !== 1 ? 's' : '' }}</div>
             </div>
           </div>
         </div>
@@ -1153,8 +1172,8 @@
   <!-- Team Overview (hidden) -->
   <div *ngIf="false">
     <!-- Performance Stats -->
-    <div *ngIf="performanceStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6">
+    <div *ngIf="performanceStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 mb-8">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Team Members</p>
@@ -1166,7 +1185,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Avg Team Score</p>
@@ -1178,7 +1197,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Total Tasks</p>
@@ -1190,7 +1209,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-200 transition-all duration-200 p-6">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-red-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600">Avg Defect Rate</p>
@@ -1218,9 +1237,9 @@
       </div>
 
       <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           <div *ngFor="let member of reliabilityData" (click)="selectTeamMember(member)"
-            class="bg-white rounded-xl border border-gray-200 hover:shadow-lg hover:border-orange-300 transition-all duration-200 cursor-pointer group">
+            class="bg-white rounded-xl border border-gray-200 hover:shadow-lg hover:border-orange-300 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full">
 
             <!-- Member Header -->
             <div class="p-6 pb-4">
@@ -1390,8 +1409,8 @@
   </div>
 
   <!-- Team Member Stats Cards -->
-  <div *ngIf="teamMemberStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200 p-6">
+  <div *ngIf="teamMemberStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-600">Average Score</p>
@@ -1405,7 +1424,7 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-600">Consistency Score</p>
@@ -1417,7 +1436,7 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 p-6" 
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 p-6 max-w-sm mx-auto w-full" 
          [class.hover:border-green-200]="teamMemberStats.trend >= 0" 
          [class.hover:border-red-200]="teamMemberStats.trend < 0">
       <div class="flex items-center justify-between">
@@ -1433,7 +1452,7 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-200 transition-all duration-200 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm font-medium text-gray-600">Total Records</p>
