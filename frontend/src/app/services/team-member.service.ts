@@ -8,14 +8,20 @@ export interface TeamMember {
   _id?: string;
   name: string;
   email: string;
-  phone: string;
-  da_id: string;
+  da_id?: string;
   workerId?: string;
-  managerId?: string;
+  managerId?: string | {
+    _id: string;
+    name: string;
+    email: string;
+    department?: string;
+    role?: string;
+  };
   isActive: boolean;
   isEmailVerified?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  lastLogin?: Date;
 }
 
 export interface TeamMemberStats {
@@ -25,7 +31,8 @@ export interface TeamMemberStats {
 }
 
 export interface TeamMemberResponse {
-  status: string;
+  success?: boolean;
+  status?: string;
   message?: string;
   results?: number;
   total?: number;

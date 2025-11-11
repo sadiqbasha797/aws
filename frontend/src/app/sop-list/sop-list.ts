@@ -51,6 +51,7 @@ export class SOPListComponent implements OnInit {
   
   // User info
   userRole = '';
+  userId = '';
   
   // UI state
   showFilters = false;
@@ -65,7 +66,7 @@ export class SOPListComponent implements OnInit {
   binItems: BinItem[] = [];
   binLoading = false;
   binError = '';
-  selectedBinCollection = 'all';
+  selectedBinCollection = 'sops';
   
   // Get processes as array for template
   get processesArray(): { processName: string; count: number }[] {
@@ -95,10 +96,12 @@ export class SOPListComponent implements OnInit {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         this.userRole = payload.role || 'user';
+        this.userId = payload.userId || payload.id || '';
         console.log('User role from token:', this.userRole); // Debug log
       } catch (error) {
         console.error('Error parsing token:', error);
         this.userRole = 'user';
+        this.userId = '';
       }
     } else {
       console.log('No token found'); // Debug log
@@ -302,6 +305,39 @@ export class SOPListComponent implements OnInit {
     this.router.navigate(['/sops', sop._id]);
   }
 
+  canEditSOP(sop: SOP): boolean {
+    return !!(sop && sop.createdBy && sop.createdBy.userId === this.userId);
+  }
+
+  canDeleteSOP(sop: SOP): boolean {
+    return !!(sop && sop.createdBy && sop.createdBy.userId === this.userId);
+  }
+
+  editSOP(sop: SOP): void {
+    if (this.canEditSOP(sop)) {
+      this.router.navigate(['/sops', sop._id, 'edit']);
+    }
+  }
+
+  deleteSOP(sop: SOP): void {
+    if (!this.canDeleteSOP(sop)) {
+      return;
+    }
+
+    if (confirm(`Are you sure you want to delete "${sop.title || 'Untitled SOP'}"? This action cannot be undone.`)) {
+      this.sopService.softDeleteSOP(sop._id).subscribe({
+        next: () => {
+          // Reload SOPs to reflect the deletion
+          this.loadSOPs();
+        },
+        error: (error) => {
+          console.error('Error deleting SOP:', error);
+          alert('Failed to delete SOP. Please try again.');
+        }
+      });
+    }
+  }
+
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString();
   }
@@ -383,9 +419,8 @@ export class SOPListComponent implements OnInit {
     this.binLoading = true;
     this.binError = '';
 
-    const collection = this.selectedBinCollection === 'all' ? undefined : this.selectedBinCollection;
-
-    this.sopService.getBinItems(collection).subscribe({
+    // Always filter by 'sops' collection
+    this.sopService.getBinItems('sops').subscribe({
       next: (response) => {
         this.binItems = response.items;
         this.binLoading = false;

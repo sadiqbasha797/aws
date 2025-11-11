@@ -21,13 +21,6 @@
           {{ userRole || 'user' }}
         </div>
         <!-- View toggle removed -->
-        <button 
-          *ngIf="userRole === 'manager'" 
-          (click)="showCreateForm()" 
-          class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-plus"></i>
-          <span>Add Reliability Data</span>
-        </button>
       </div>
     </div>
   </div>
@@ -74,44 +67,40 @@
       </h3>
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600">Week</label>
-          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
+          <label class="text-sm text-gray-600">Month</label>
+          <select [(ngModel)]="filters.month" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
             <option [ngValue]="undefined">All</option>
-            <option *ngFor="let w of getWeekOptions()" [ngValue]="w">{{ w }}</option>
+            <option *ngFor="let month of monthOptions" [ngValue]="month.value">{{ month.label }}</option>
           </select>
         </div>
-        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
-        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
+        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm font-medium transition-colors duration-200">Show all</button>
+        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded-lg text-sm font-medium transition-colors duration-200">Current month</button>
       </div>
     </div>
     <div class="p-6">
       <!-- Processes View -->
       <div *ngIf="currentView === 'processes'">
         <!-- Process Cards -->
-        <div *ngIf="processGroups.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mb-6">
+        <div *ngIf="processGroups.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 mb-6">
           <div *ngFor="let processGroup of processGroups" 
                (click)="toggleProcess(processGroup.processName)"
-               class="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5 cursor-pointer hover:shadow-lg hover:border-orange-300 transition-all duration-200 max-w-sm mx-auto w-full">
-            <div class="flex items-start justify-between mb-3">
-              <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-cogs text-white text-xl"></i>
+               class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all duration-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2 flex-1 min-w-0">
+                <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-cogs text-white text-sm"></i>
                 </div>
-                <div>
-                  <h4 class="font-bold text-gray-900 text-lg">{{ processGroup.processName }}</h4>
-                  <p class="text-sm text-gray-600 mt-1">
+                <div class="min-w-0 flex-1">
+                  <h4 class="font-semibold text-gray-900 text-sm truncate">{{ processGroup.processName }}</h4>
+                  <p class="text-xs text-gray-600 mt-0.5">
                     <i class="fas fa-briefcase mr-1"></i>
                     {{ processGroup.jobGroups.length }} job{{ processGroup.jobGroups.length !== 1 ? 's' : '' }}
                   </p>
                 </div>
               </div>
-              <div class="flex items-center">
-                <i class="fas fa-chevron-right text-orange-600 text-lg transition-transform duration-200"></i>
+              <div class="flex items-center flex-shrink-0 ml-2">
+                <i class="fas fa-chevron-right text-orange-600 text-xs transition-transform duration-200"></i>
               </div>
-            </div>
-            <div class="bg-white rounded-lg p-3 mt-3">
-              <div class="text-2xl font-bold text-orange-600">{{ getTotalRecordsForProcess(processGroup) }}</div>
-              <div class="text-xs text-gray-600 uppercase tracking-wide">Total Records</div>
             </div>
           </div>
         </div>
@@ -128,10 +117,19 @@
             <i class="fas fa-arrow-left"></i>
             <span>Back to Processes</span>
           </button>
+          <div class="flex items-center justify-between">
           <h3 class="text-xl font-bold text-gray-900 mb-2">
             <i class="fas fa-folder-open text-orange-500 mr-2"></i>
             {{ selectedProcessForView.processName }}
           </h3>
+            <button 
+              *ngIf="userRole === 'manager'" 
+              (click)="showCreateForm()" 
+              class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+              <i class="fas fa-plus"></i>
+              <span>Add Reliability Data</span>
+            </button>
+          </div>
         </div>
 
         <!-- Tabs within process view -->
@@ -152,7 +150,7 @@
           ? 'border-b-2 border-blue-500 text-blue-600 font-medium py-4 px-1' 
           : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
         <i class="fas fa-file-alt mr-2"></i>
-        Audit Docs
+        Audit
       </button>
     </nav>
   </div>
@@ -160,24 +158,20 @@
         <!-- Job IDs Content -->
         <div *ngIf="processViewTab === 'jobIds'">
           <p class="text-sm text-gray-600 mb-4">{{ selectedProcessForView.jobGroups.length }} job{{ selectedProcessForView.jobGroups.length !== 1 ? 's' : '' }}</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
             <div *ngFor="let jobGroup of selectedProcessForView.jobGroups" 
                  (click)="toggleJobId(selectedProcessForView.processName, jobGroup.jobId)"
-                 class="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 max-w-xs mx-auto w-full">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center space-x-2">
-                  <div class="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-tag text-white"></i>
+                 class="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 flex-1 min-w-0">
+                  <div class="w-7 h-7 bg-gray-500 rounded-md flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-tag text-white text-xs"></i>
                   </div>
-                  <span class="font-semibold text-gray-800 text-sm">{{ jobGroup.jobId }}</span>
+                  <span class="font-semibold text-gray-800 text-xs truncate">{{ jobGroup.jobId }}</span>
                 </div>
-                <div class="flex items-center">
-                  <i class="fas fa-chevron-right text-gray-600 text-sm transition-transform duration-200"></i>
+                <div class="flex items-center flex-shrink-0 ml-1">
+                  <i class="fas fa-chevron-right text-gray-600 text-xs transition-transform duration-200"></i>
                 </div>
-              </div>
-              <div class="bg-white rounded-lg p-2 mt-2">
-                <div class="text-lg font-bold text-gray-700">{{ jobGroup.records.length }}</div>
-                <div class="text-xs text-gray-600">Record{{ jobGroup.records.length !== 1 ? 's' : '' }}</div>
               </div>
             </div>
           </div>
@@ -293,7 +287,6 @@
           <div>
             <p class="text-sm text-gray-700">
               Showing page <span class="font-medium">{{ auditDocPage }}</span> of <span class="font-medium">{{ auditDocTotalPages }}</span>
-              ({{ auditDocTotalRecords }} total records)
             </p>
           </div>
           <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
@@ -326,6 +319,7 @@
           </div>
         </div>
       </div>
+
 
       <!-- All Records Table View -->
       <div *ngIf="currentView === 'allRecords'">
@@ -558,24 +552,174 @@
           </h3>
           <p class="text-sm text-gray-600 mb-4">Process: {{ selectedProcessForView.processName }} | {{ selectedJobGroupForView.records.length }} record{{ selectedJobGroupForView.records.length !== 1 ? 's' : '' }}</p>
         </div>
+
+        <!-- Tabs for Job View -->
+        <div class="mb-6 border-b border-gray-200">
+          <nav class="flex space-x-8">
+            <button
+              (click)="setJobViewTab('table')"
+              [class]="jobViewTab === 'table' 
+                ? 'border-b-2 border-orange-500 text-orange-600 font-medium py-4 px-1' 
+                : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
+              <i class="fas fa-table mr-2"></i>
+              Production
+            </button>
+            <button
+              *ngIf="userRole === 'manager'"
+              (click)="setJobViewTab('docs')"
+              [class]="jobViewTab === 'docs' 
+                ? 'border-b-2 border-orange-500 text-orange-600 font-medium py-4 px-1' 
+                : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
+              <i class="fas fa-file-excel mr-2"></i>
+              Reliability Docs
+            </button>
+          </nav>
+        </div>
         
-        <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <!-- Production Table Content -->
+        <div *ngIf="jobViewTab === 'table'" class="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    DA ID
+                  <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                    <div class="flex items-center justify-between">
+                      <span>DA ID</span>
+                      <button 
+                        type="button"
+                        (click)="toggleDaIdFilterMenu($event); $event.stopPropagation()"
+                        class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                        <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                        <span *ngIf="columnFilters.selectedDaIds.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                      </button>
+                    </div>
+                    <!-- DA ID Filter Dropdown -->
+                    <div *ngIf="showDaIdFilter" 
+                         class="filter-dropdown fixed bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto min-w-[200px]"
+                         style="z-index: 9999;"
+                         [style.top.px]="daIdFilterPosition.top"
+                         [style.left.px]="daIdFilterPosition.left"
+                         (click)="$event.stopPropagation()">
+                      <div class="p-2 border-b border-gray-200">
+                        <input 
+                          type="text" 
+                          placeholder="Search DA ID..." 
+                          class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          [(ngModel)]="daIdSearchTerm">
+                      </div>
+                      <div class="p-2 max-h-48 overflow-y-auto">
+                        <div *ngFor="let daId of getFilteredDaIds()" 
+                             class="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"
+                             (click)="toggleDaIdFilter(daId)">
+                          <input 
+                            type="checkbox" 
+                            [checked]="isDaIdSelected(daId)"
+                            (change)="toggleDaIdFilter(daId)"
+                            class="mr-2 cursor-pointer"
+                            (click)="$event.stopPropagation()">
+                          <span class="text-sm text-gray-700">{{ daId }}</span>
+                        </div>
+                        <div *ngIf="getFilteredDaIds().length === 0" class="text-sm text-gray-500 px-2 py-1">No DA IDs found</div>
+                      </div>
+                      <div class="p-2 border-t border-gray-200 flex justify-between">
+                        <button (click)="clearDaIdFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                        <button (click)="showDaIdFilter = false" class="text-xs text-orange-600 hover:text-orange-800">Done</button>
+                      </div>
+                    </div>
                   </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker ID</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                    <div class="flex items-center justify-between">
+                      <span>Worker ID</span>
+                      <button 
+                        type="button"
+                        (click)="toggleWorkerIdFilterMenu($event); $event.stopPropagation()"
+                        class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                        <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                        <span *ngIf="columnFilters.selectedWorkerIds.length > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                      </button>
+                    </div>
+                    <!-- Worker ID Filter Dropdown -->
+                    <div *ngIf="showWorkerIdFilter" 
+                         class="filter-dropdown fixed bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto min-w-[200px]"
+                         style="z-index: 9999;"
+                         [style.top.px]="workerIdFilterPosition.top"
+                         [style.left.px]="workerIdFilterPosition.left"
+                         (click)="$event.stopPropagation()">
+                      <div class="p-2 border-b border-gray-200">
+                        <input 
+                          type="text" 
+                          placeholder="Search Worker ID..." 
+                          class="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          [(ngModel)]="workerIdSearchTerm">
+                      </div>
+                      <div class="p-2 max-h-48 overflow-y-auto">
+                        <div *ngFor="let workerId of getFilteredWorkerIds()" 
+                             class="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"
+                             (click)="toggleWorkerIdFilter(workerId)">
+                          <input 
+                            type="checkbox" 
+                            [checked]="isWorkerIdSelected(workerId)"
+                            (change)="toggleWorkerIdFilter(workerId)"
+                            class="mr-2 cursor-pointer"
+                            (click)="$event.stopPropagation()">
+                          <span class="text-sm text-gray-700">{{ workerId }}</span>
+                        </div>
+                        <div *ngIf="getFilteredWorkerIds().length === 0" class="text-sm text-gray-500 px-2 py-1">No Worker IDs found</div>
+                      </div>
+                      <div class="p-2 border-t border-gray-200 flex justify-between">
+                        <button (click)="clearWorkerIdFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                        <button (click)="showWorkerIdFilter = false" class="text-xs text-orange-600 hover:text-orange-800">Done</button>
+                      </div>
+                    </div>
+                  </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Opportunities *</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Segments Matching *</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labels Matching *</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Defects *</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Reliability Score *</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Opportunities</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Segments Matching</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Labels Matching</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Defects</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Reliability Score</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                    <div class="flex items-center justify-between">
+                      <span>Date</span>
+                      <button 
+                        type="button"
+                        (click)="toggleDateFilterMenu($event); $event.stopPropagation()"
+                        class="filter-button ml-2 p-1 hover:bg-gray-200 rounded cursor-pointer relative">
+                        <i class="fas fa-ellipsis-v text-gray-400 hover:text-gray-600"></i>
+                        <span *ngIf="columnFilters.dateFrom || columnFilters.dateTo" class="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                      </button>
+                    </div>
+                    <!-- Date Range Filter Popup -->
+                    <div *ngIf="showDateFilter" 
+                         class="filter-dropdown fixed bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[280px]"
+                         style="z-index: 9999;"
+                         [style.top.px]="dateFilterPosition.top"
+                         [style.left.px]="dateFilterPosition.left"
+                         (click)="$event.stopPropagation()">
+                      <h4 class="text-sm font-semibold text-gray-700 mb-3">Filter by Date Range</h4>
+                      <div class="space-y-3">
+                        <div>
+                          <label class="block text-xs text-gray-600 mb-1">From Date</label>
+                          <input 
+                            type="date" 
+                            [(ngModel)]="columnFilters.dateFrom"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                        </div>
+                        <div>
+                          <label class="block text-xs text-gray-600 mb-1">To Date</label>
+                          <input 
+                            type="date" 
+                            [(ngModel)]="columnFilters.dateTo"
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                        </div>
+                      </div>
+                      <div class="flex justify-between mt-4 pt-3 border-t border-gray-200">
+                        <button (click)="clearDateFilter()" class="text-xs text-gray-600 hover:text-gray-800">Clear</button>
+                        <button (click)="applyDateFilter()" class="text-xs text-orange-600 hover:text-orange-800">Apply</button>
+                      </div>
+                    </div>
+                  </th>
                   <th *ngIf="userRole === 'manager'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -614,6 +758,138 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Reliability Docs Content for Job -->
+        <div *ngIf="jobViewTab === 'docs' && userRole === 'manager'" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">
+              <i class="fas fa-file-excel text-orange-500 mr-2"></i>
+              Reliability Documents - Job ID: {{ selectedJobGroupForView.jobId }}
+            </h3>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  [(ngModel)]="reliabilityDocSearch" 
+                  (keyup.enter)="searchReliabilityDocs()"
+                  placeholder="Search documents..." 
+                  class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64">
+                <button 
+                  (click)="searchReliabilityDocs()" 
+                  class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button 
+                  *ngIf="reliabilityDocSearch" 
+                  (click)="clearReliabilityDocSearch()" 
+                  class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium transition-colors duration-200">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year/Month</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr *ngFor="let reliabilityDoc of reliabilityDocs" class="hover:bg-gray-50 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <a [href]="reliabilityDoc.document.s3Url" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+                        <i class="fas fa-file-excel"></i>
+                        <span>{{ reliabilityDoc.document.originalName }}</span>
+                        <i class="fas fa-external-link-alt text-xs"></i>
+                      </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.processname || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.job_id || '-' }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span *ngIf="reliabilityDoc.year && reliabilityDoc.month">{{ reliabilityDoc.year }}/{{ reliabilityDoc.month }}</span>
+                      <span *ngIf="!reliabilityDoc.year || !reliabilityDoc.month">-</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.createdBy }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatReliabilityDocTimestamp(reliabilityDoc.createdAt!) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div class="flex items-center space-x-2">
+                        <button 
+                          (click)="deleteReliabilityDoc(reliabilityDoc._id!)" 
+                          class="text-red-600 hover:text-red-900 transition-colors duration-200 flex items-center space-x-1"
+                          title="Delete">
+                          <i class="fas fa-trash"></i>
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="reliabilityDocs.length === 0 && !isLoading">
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                      <i class="fas fa-file-excel text-4xl mb-4 text-gray-300"></i>
+                      <p class="text-lg font-semibold">No reliability documents found</p>
+                      <p class="text-sm mt-2">Upload Excel/CSV files from the reliability create page to see them here</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div *ngIf="reliabilityDocTotalPages > 1" class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+              <div class="flex flex-1 justify-between sm:hidden">
+                <button (click)="goToReliabilityDocPage(reliabilityDocPage - 1)" [disabled]="reliabilityDocPage <= 1"
+                        class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Previous
+                </button>
+                <button (click)="goToReliabilityDocPage(reliabilityDocPage + 1)" [disabled]="reliabilityDocPage >= reliabilityDocTotalPages"
+                        class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Next
+                </button>
+              </div>
+              <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm text-gray-700">
+                    Showing page <span class="font-medium">{{ reliabilityDocPage }}</span> of <span class="font-medium">{{ reliabilityDocTotalPages }}</span>
+                  </p>
+                </div>
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button (click)="goToReliabilityDocPage(reliabilityDocPage - 1)" [disabled]="reliabilityDocPage <= 1"
+                          class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="sr-only">Previous</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  <button *ngFor="let page of getReliabilityDocPaginationPages(); let i = index"
+                          (click)="goToReliabilityDocPage(page)"
+                          [class]="page === reliabilityDocPage ?
+                            'relative z-10 inline-flex items-center bg-orange-500 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600' :
+                            'relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'">
+                    {{ page }}
+                  </button>
+                  
+                  <button (click)="goToReliabilityDocPage(reliabilityDocPage + 1)" [disabled]="reliabilityDocPage >= reliabilityDocTotalPages"
+                          class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="sr-only">Next</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -763,14 +1039,14 @@
       </h3>
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600">Week</label>
-          <select [(ngModel)]="filters.week" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
+          <label class="text-sm text-gray-600">Month</label>
+          <select [(ngModel)]="filters.month" (change)="applyFilters()" class="border border-gray-300 rounded-lg px-2 py-1 text-sm">
             <option [ngValue]="undefined">All</option>
-            <option *ngFor="let w of getWeekOptions()" [ngValue]="w">{{ w }}</option>
+            <option *ngFor="let month of monthOptions" [ngValue]="month.value">{{ month.label }}</option>
           </select>
         </div>
-        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200">Show all</button>
-        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">Current month</button>
+        <button (click)="showAll()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm font-medium transition-colors duration-200">Show all</button>
+        <button *ngIf="!filters.month" (click)="showCurrentMonth()" class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded-lg text-sm font-medium transition-colors duration-200">Current month</button>
       </div>
     </div>
     <div class="overflow-x-auto table-container">
@@ -1120,7 +1396,7 @@
           </label>
           <select [(ngModel)]="filters.month" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
             <option [value]="undefined">All Months</option>
-            <option *ngFor="let month of getMonthOptions()" [value]="month.value">{{ month.label }}</option>
+            <option *ngFor="let month of monthOptions" [value]="month.value">{{ month.label }}</option>
           </select>
         </div>
 
@@ -1452,17 +1728,6 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-200 transition-all duration-200 p-6 max-w-sm mx-auto w-full">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-600">Total Records</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ teamMemberStats.totalRecords }}</p>
-        </div>
-        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-          <i class="fas fa-file-alt text-purple-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Performance Analysis -->
@@ -1686,7 +1951,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Month *</label>
             <select [(ngModel)]="reliabilityForm.month" name="month" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-              <option *ngFor="let month of getMonthOptions()" [value]="month.value">{{ month.label }}</option>
+              <option *ngFor="let month of monthOptions" [value]="month.value">{{ month.label }}</option>
             </select>
           </div>
 
@@ -1733,7 +1998,6 @@
           <div>
             <p class="text-sm text-gray-700">
               Showing page <span class="font-medium">{{ currentPage }}</span> of <span class="font-medium">{{ totalPages }}</span>
-              ({{ totalRecords }} total records)
             </p>
           </div>
           <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">

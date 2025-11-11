@@ -46,7 +46,6 @@
           class="btn btn-primary"
           [disabled]="loading || !processForm.name.trim()">
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-          <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Process' : 'Create Process') }}
         </button>
         
@@ -56,7 +55,6 @@
           (click)="cancel()"
           [disabled]="loading">
           <i class="fas fa-times"></i>
-          Cancel
         </button>
       </div>
     </form>

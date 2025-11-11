@@ -6,6 +6,10 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login').then(m => m.Login)
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./profile/profile').then(m => m.Profile)
+  },
+  {
     path: 'dashboard',
     loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard)
   },
@@ -72,10 +76,6 @@ export const routes: Routes = [
   {
     path: 'sops/:id/upload-version',
     loadComponent: () => import('./sop-update/sop-update').then(m => m.SOPUpdateComponent)
-  },
-  {
-    path: 'sops/:id',
-    loadComponent: () => import('./sop-detail/sop-detail').then(m => m.SOPDetailComponent)
   },
   {
     path: 'processes',

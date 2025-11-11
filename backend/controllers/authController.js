@@ -7,7 +7,7 @@ const { sendVerificationEmail } = require('../utils/email');
 // Register User
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, managerId, workerId, da_id } = req.body;
+    const { name, email, password, managerId, workerId, da_id } = req.body;
 
     // Check if manager exists
     const manager = await Manager.findById(managerId);
@@ -32,7 +32,6 @@ const registerUser = async (req, res) => {
       name,
       email,
       password,
-      phone,
       managerId
     };
 
@@ -52,9 +51,9 @@ const registerUser = async (req, res) => {
     const verificationToken = teamMember.createEmailVerificationToken();
     await teamMember.save({ validateBeforeSave: false });
 
-    // Send verification email to the team member
+    // Send verification email to the team member with credentials
     try {
-      await sendVerificationEmail(teamMember, verificationToken);
+      await sendVerificationEmail(teamMember, verificationToken, password);
     } catch (emailError) {
       // If email fails, log the error but don't prevent registration
       console.error('Failed to send verification email:', emailError);
@@ -97,9 +96,9 @@ const registerManager = async (req, res) => {
     const verificationToken = manager.createEmailVerificationToken();
     await manager.save({ validateBeforeSave: false });
 
-    // Send verification email to the manager
+    // Send verification email to the manager with credentials
     try {
-      await sendVerificationEmail(manager, verificationToken);
+      await sendVerificationEmail(manager, verificationToken, password);
     } catch (emailError) {
       // If email fails, log the error but don't prevent registration
       console.error('Failed to send verification email to manager:', emailError);

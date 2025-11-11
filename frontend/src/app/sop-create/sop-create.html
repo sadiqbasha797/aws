@@ -35,7 +35,7 @@
     </div>
 
     <div class="form-section">
-      <h2>Documents & URL (Optional)</h2>
+      <h2>SOP URL (Optional)</h2>
       
       <div class="form-group">
         <label for="sopUrl">SOP URL</label>
@@ -47,35 +47,6 @@
           class="form-control"
           placeholder="https://example.com/sop">
         <p class="form-hint">Enter a URL to the SOP (e.g., external link or cloud storage link)</p>
-      </div>
-      
-      <div class="file-upload">
-        <input 
-          type="file" 
-          id="documents"
-          multiple 
-          (change)="onFileSelect($event)"
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.wmv"
-          class="file-input">
-        
-        <label for="documents" class="file-input-label">
-          <i class="fas fa-cloud-upload-alt"></i>
-          Choose Documents/Video
-        </label>
-        
-        <p class="file-info">
-          Upload documents or video (PDF, Word, Excel, PowerPoint, Text, Images, Video files)
-        </p>
-      </div>
-
-      <div class="selected-files" *ngIf="selectedFiles && selectedFiles.length > 0">
-        <h4>Selected Files:</h4>
-        <ul>
-          <li *ngFor="let file of getSelectedFileArray()">
-            <i class="fas fa-file"></i>
-            {{ file.name }}
-          </li>
-        </ul>
       </div>
     </div>
 
@@ -90,7 +61,6 @@
         class="btn btn-primary"
         [disabled]="loading">
         <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-        <i class="fas fa-save" *ngIf="!loading"></i>
         {{ loading ? 'Creating...' : 'Create SOP' }}
       </button>
       
@@ -100,7 +70,6 @@
         (click)="cancel()"
         [disabled]="loading">
         <i class="fas fa-times"></i>
-        Cancel
       </button>
     </div>
   </form>

@@ -16,9 +16,8 @@ export class TeamMemberFormComponent implements OnInit {
   memberForm = {
     name: '',
     email: '',
-    department: '',
-    position: '',
-    phone: '',
+    password: '',
+    workerId: '',
     isActive: true
   };
 
@@ -37,11 +36,16 @@ export class TeamMemberFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.memberId = this.route.snapshot.paramMap.get('id');
-    if (this.memberId) {
-      this.isEditMode = true;
-      this.loadMember();
-    }
+    // Use paramMap observable to handle route changes
+    this.route.paramMap.subscribe(params => {
+      this.memberId = params.get('id');
+      if (this.memberId) {
+        this.isEditMode = true;
+        this.loadMember();
+      } else {
+        this.isEditMode = false;
+      }
+    });
   }
 
   private checkManagerAccess(): void {
@@ -56,22 +60,30 @@ export class TeamMemberFormComponent implements OnInit {
     if (!this.memberId) return;
 
     this.loading = true;
+    this.error = '';
     this.teamService.getTeamMemberById(this.memberId).subscribe({
-      next: (response) => {
-        const member = response.teamMember;
+      next: (response: any) => {
+        // Handle different response structures
+        const member = response.data?.teamMember || response.teamMember;
+        
+        if (!member) {
+          this.error = 'Team member not found';
+          this.loading = false;
+          return;
+        }
+        
         this.memberForm = {
-          name: member.name,
-          email: member.email,
-          department: member.department || '',
-          position: member.position || '',
-          phone: member.phone || '',
-          isActive: member.isActive
+          name: member.name || '',
+          email: member.email || '',
+          password: '', // Password not needed in edit mode
+          workerId: member.workerId || '',
+          isActive: member.isActive !== undefined ? member.isActive : true
         };
         this.loading = false;
       },
       error: (error) => {
         console.error('Error loading member:', error);
-        this.error = 'Failed to load team member';
+        this.error = error.error?.message || error.error?.error?.message || 'Failed to load team member';
         this.loading = false;
       }
     });
@@ -83,12 +95,31 @@ export class TeamMemberFormComponent implements OnInit {
       return;
     }
 
+    // Password is required only when creating a new member
+    if (!this.isEditMode && !this.memberForm.password) {
+      this.error = 'Password is required';
+      return;
+    }
+
+    if (!this.isEditMode && this.memberForm.password && this.memberForm.password.length < 6) {
+      this.error = 'Password must be at least 6 characters long';
+      return;
+    }
+
     this.loading = true;
     this.error = '';
 
     if (this.isEditMode && this.memberId) {
-      this.teamService.updateTeamMember(this.memberId, this.memberForm).subscribe({
-        next: () => {
+      // Don't send password when updating (unless they want to change it, but we're not implementing that now)
+      const updateData = {
+        name: this.memberForm.name,
+        email: this.memberForm.email,
+        workerId: this.memberForm.workerId || undefined,
+        isActive: this.memberForm.isActive
+      };
+      this.teamService.updateTeamMember(this.memberId, updateData).subscribe({
+        next: (response) => {
+          this.loading = false;
           this.router.navigate(['/team-management']);
         },
         error: (error) => {
@@ -98,8 +129,10 @@ export class TeamMemberFormComponent implements OnInit {
         }
       });
     } else {
+      // Include password when creating
       this.teamService.createTeamMember(this.memberForm).subscribe({
-        next: () => {
+        next: (response) => {
+          this.loading = false;
           this.router.navigate(['/team-management']);
         },
         error: (error) => {

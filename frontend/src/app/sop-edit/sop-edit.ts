@@ -23,7 +23,8 @@ export class SOPEditComponent implements OnInit {
   formData: SOPCreateRequest = {
     title: '',
     process: '',
-    sopUrl: ''
+    sopUrl: '',
+    version: 1
   };
 
   // User info
@@ -82,7 +83,8 @@ export class SOPEditComponent implements OnInit {
         this.formData = {
           title: this.sop.title || '',
           process: this.sop.process || '',
-          sopUrl: this.sop.sopUrl || ''
+          sopUrl: this.sop.sopUrl || '',
+          version: this.sop.version || this.sop.versionNumber || 1
         };
         
         this.loading = false;
@@ -118,7 +120,8 @@ export class SOPEditComponent implements OnInit {
     const updateData: Partial<SOPCreateRequest> = {
       title: this.formData.title.trim(),
       process: this.formData.process?.trim() || '',
-      sopUrl: this.formData.sopUrl?.trim() || undefined
+      sopUrl: this.formData.sopUrl?.trim() || undefined,
+      version: this.formData.version || 1
     };
 
     this.sopService.updateSOP(this.sop._id, updateData).subscribe({
@@ -126,7 +129,7 @@ export class SOPEditComponent implements OnInit {
         this.sop = response.sop;
         this.saving = false;
         alert('SOP updated successfully');
-        this.router.navigate(['/sops', this.sop._id]);
+        this.router.navigate(['/sops']);
       },
       error: (error) => {
         console.error('Error updating SOP:', error);
@@ -137,11 +140,7 @@ export class SOPEditComponent implements OnInit {
   }
 
   cancel(): void {
-    if (this.sop) {
-      this.router.navigate(['/sops', this.sop._id]);
-    } else {
-      this.router.navigate(['/sops']);
-    }
+    this.router.navigate(['/sops']);
   }
 
   goBack(): void {

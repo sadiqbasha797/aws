@@ -72,6 +72,14 @@ export class Productivity implements OnInit {
   selectedYear: number = new Date().getFullYear();
   selectedWeek: number | null = null;
   showWeekGrid = false; // Control whether to show all weeks in grid or just selector
+  weekInputValue: number | string | null = null; // Store the week input value (can be string from input)
+  weekInputError: string = ''; // Store validation error message
+  
+  // Week range selection
+  fromWeek: number | string | null = null;
+  toWeek: number | string | null = null;
+  weekRangeError: string = '';
+  isWeekRangeMode: boolean = false;
   
   // Pagination
   currentPage = 1;
@@ -731,6 +739,8 @@ export class Productivity implements OnInit {
   
   selectWeek(week: number) {
     this.selectedWeek = week;
+    this.weekInputValue = week; // Sync input value when week is selected from grid
+    this.weekInputError = ''; // Clear any errors
     this.calendarView = 'week';
     this.loadProductivityForWeek();
   }
@@ -738,6 +748,12 @@ export class Productivity implements OnInit {
   goBackToYear() {
     this.calendarView = 'year';
     this.selectedWeek = null;
+    this.weekInputValue = null;
+    this.weekInputError = '';
+    this.fromWeek = null;
+    this.toWeek = null;
+    this.weekRangeError = '';
+    this.isWeekRangeMode = false;
     this.productivityData = [];
     this.showWeekGrid = false; // Reset to not show grid when going back
   }
@@ -755,12 +771,134 @@ export class Productivity implements OnInit {
     }
   }
 
+  // Get maximum week number for the selected year
+  getMaxWeekForYear(): number {
+    const weeks = this.getWeeksInYear(this.selectedYear);
+    return weeks.length > 0 ? weeks[weeks.length - 1] : 53;
+  }
+
+  // Validate and select week from input
+  validateAndSelectWeek() {
+    this.weekInputError = '';
+    
+    // Check if input is empty (null, undefined, empty string, or 0)
+    if (this.weekInputValue === null || 
+        this.weekInputValue === undefined || 
+        this.weekInputValue === '' ||
+        this.weekInputValue === 0) {
+      this.weekInputError = 'Please enter a week number';
+      return;
+    }
+
+    // Convert to number if it's a string
+    const weekNumber = typeof this.weekInputValue === 'string' 
+      ? parseInt(this.weekInputValue.trim(), 10) 
+      : Number(this.weekInputValue);
+
+    // Check if it's a valid number
+    if (isNaN(weekNumber) || !Number.isInteger(weekNumber) || weekNumber < 1) {
+      this.weekInputError = 'Week number must be a positive integer (at least 1)';
+      return;
+    }
+
+    // Get valid weeks for the selected year
+    const validWeeks = this.getWeeksInYear(this.selectedYear);
+    const maxWeek = validWeeks.length > 0 ? validWeeks[validWeeks.length - 1] : 53;
+
+    // Check if week is within valid range
+    if (weekNumber > maxWeek) {
+      this.weekInputError = `Week number must be between 1 and ${maxWeek} for year ${this.selectedYear}`;
+      return;
+    }
+
+    // If validation passes, select the week
+    this.selectedWeek = weekNumber;
+    this.isWeekRangeMode = false;
+    this.selectWeek(weekNumber);
+  }
+
+  validateAndSelectWeekRange() {
+    this.weekRangeError = '';
+    
+    // Validate fromWeek
+    if (this.fromWeek === null || 
+        this.fromWeek === undefined || 
+        this.fromWeek === '' ||
+        this.fromWeek === 0) {
+      this.weekRangeError = 'Please enter a "From Week" number';
+      return;
+    }
+
+    // Validate toWeek
+    if (this.toWeek === null || 
+        this.toWeek === undefined || 
+        this.toWeek === '' ||
+        this.toWeek === 0) {
+      this.weekRangeError = 'Please enter a "To Week" number';
+      return;
+    }
+
+    // Convert to numbers
+    const fromWeekNum = typeof this.fromWeek === 'string' 
+      ? parseInt(this.fromWeek.trim(), 10) 
+      : Number(this.fromWeek);
+    
+    const toWeekNum = typeof this.toWeek === 'string' 
+      ? parseInt(this.toWeek.trim(), 10) 
+      : Number(this.toWeek);
+
+    // Check if they're valid numbers
+    if (isNaN(fromWeekNum) || !Number.isInteger(fromWeekNum) || fromWeekNum < 1) {
+      this.weekRangeError = 'From Week must be a positive integer (at least 1)';
+      return;
+    }
+
+    if (isNaN(toWeekNum) || !Number.isInteger(toWeekNum) || toWeekNum < 1) {
+      this.weekRangeError = 'To Week must be a positive integer (at least 1)';
+      return;
+    }
+
+    // Get valid weeks for the selected year
+    const validWeeks = this.getWeeksInYear(this.selectedYear);
+    const maxWeek = validWeeks.length > 0 ? validWeeks[validWeeks.length - 1] : 53;
+
+    // Check if weeks are within valid range
+    if (fromWeekNum > maxWeek) {
+      this.weekRangeError = `From Week must be between 1 and ${maxWeek} for year ${this.selectedYear}`;
+      return;
+    }
+
+    if (toWeekNum > maxWeek) {
+      this.weekRangeError = `To Week must be between 1 and ${maxWeek} for year ${this.selectedYear}`;
+      return;
+    }
+
+    // Check if fromWeek is less than or equal to toWeek
+    if (fromWeekNum > toWeekNum) {
+      this.weekRangeError = 'From Week must be less than or equal to To Week';
+      return;
+    }
+
+    // If validation passes, load data for the range
+    this.isWeekRangeMode = true;
+    this.selectedWeek = null;
+    this.loadProductivityForWeekRange(fromWeekNum, toWeekNum);
+  }
+
   changeYear(direction: 'prev' | 'next') {
     if (direction === 'prev') {
       this.selectedYear = this.selectedYear - 1;
     } else {
       this.selectedYear = this.selectedYear + 1;
     }
+    // Clear week inputs when year changes
+    this.weekInputValue = null;
+    this.weekInputError = '';
+    this.fromWeek = null;
+    this.toWeek = null;
+    this.weekRangeError = '';
+    this.selectedWeek = null;
+    this.isWeekRangeMode = false;
     if (this.showWeekGrid) {
       this.loadWeeksForYear();
     }
@@ -895,22 +1033,24 @@ export class Productivity implements OnInit {
     
     const filterParams: any = {
       page: 1,
-      limit: 100 // Get all records for the week
+      limit: 10000 // Get all records to filter by week and year
     };
     
     if (this.userRole === 'manager') {
-      // For managers, filter by week number
+      // For managers, filter by week number and year
       this.productivityService.getAllProductivityData(filterParams).subscribe({
         next: (allData) => {
           if (allData?.status === 'success' && allData.data?.productivityData) {
-            // Filter by week number (use stored week from database)
+            // Filter by week number and year (use stored week from database)
             const weekData = allData.data.productivityData.filter((record: ProductivityData) => {
               const recordWeek = this.getWeekFromData(record);
-              return recordWeek === this.selectedWeek;
+              return record.year === this.selectedYear && recordWeek === this.selectedWeek;
             });
             this.productivityData = weekData;
             this.allProductivityData = weekData;
             this.applyColumnFilters();
+            this.totalRecords = weekData.length;
+            this.totalPages = 1;
           }
           this.isLoading = false;
         },
@@ -922,22 +1062,89 @@ export class Productivity implements OnInit {
       });
     } else {
       // For users, use their endpoint
-      this.productivityService.getMyProductivityData(1, 100).subscribe({
+      this.productivityService.getMyProductivityData(1, 10000).subscribe({
         next: (response) => {
           if (response.status === 'success' && response.data?.productivityData) {
             const weekData = response.data.productivityData.filter((record: ProductivityData) => {
               const recordWeek = this.getWeekFromData(record);
-              return recordWeek === this.selectedWeek;
+              return record.year === this.selectedYear && recordWeek === this.selectedWeek;
             });
             this.productivityData = weekData;
             this.allProductivityData = weekData;
             this.applyColumnFilters();
+            this.totalRecords = weekData.length;
+            this.totalPages = 1;
           }
           this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading week data:', error);
           this.errorMessage = 'Failed to load your productivity data for this week';
+          this.isLoading = false;
+        }
+      });
+    }
+  }
+
+  // Load productivity data for week range
+  loadProductivityForWeekRange(fromWeek: number, toWeek: number) {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.calendarView = 'week';
+    
+    const filterParams: any = {
+      page: 1,
+      limit: 10000 // Get all records to filter by week range
+    };
+    
+    if (this.userRole === 'manager') {
+      // For managers, get all data and filter by week range
+      this.productivityService.getAllProductivityData(filterParams).subscribe({
+        next: (allData) => {
+          if (allData?.status === 'success' && allData.data?.productivityData) {
+            // Filter by week range and year
+            const rangeData = allData.data.productivityData.filter((record: ProductivityData) => {
+              const recordWeek = this.getWeekFromData(record);
+              return record.year === this.selectedYear && 
+                     recordWeek >= fromWeek && 
+                     recordWeek <= toWeek;
+            });
+            this.productivityData = rangeData;
+            this.allProductivityData = rangeData;
+            this.applyColumnFilters();
+            this.totalRecords = rangeData.length;
+            this.totalPages = 1;
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading week range data:', error);
+          this.errorMessage = `Failed to load productivity data for weeks ${fromWeek} to ${toWeek}`;
+          this.isLoading = false;
+        }
+      });
+    } else {
+      // For users, use their endpoint
+      this.productivityService.getMyProductivityData(1, 10000).subscribe({
+        next: (response) => {
+          if (response.status === 'success' && response.data?.productivityData) {
+            const rangeData = response.data.productivityData.filter((record: ProductivityData) => {
+              const recordWeek = this.getWeekFromData(record);
+              return record.year === this.selectedYear && 
+                     recordWeek >= fromWeek && 
+                     recordWeek <= toWeek;
+            });
+            this.productivityData = rangeData;
+            this.allProductivityData = rangeData;
+            this.applyColumnFilters();
+            this.totalRecords = rangeData.length;
+            this.totalPages = 1;
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading week range data:', error);
+          this.errorMessage = `Failed to load your productivity data for weeks ${fromWeek} to ${toWeek}`;
           this.isLoading = false;
         }
       });
@@ -1203,13 +1410,30 @@ export class Productivity implements OnInit {
     }
   }
 
+  // Get data for current view
+  getCurrentViewData(): ProductivityData[] {
+    // If viewing team member details, use that data
+    if (this.selectedTeamMember && this.teamMemberDetails.length > 0) {
+      return this.teamMemberDetails;
+    }
+    // For week view or all view, use productivityData
+    // If productivityData is empty but allProductivityData has data, use that (fallback)
+    if (this.productivityData.length === 0 && this.allProductivityData.length > 0) {
+      return this.allProductivityData;
+    }
+    // Otherwise use the main productivity data (works for week view, all view, etc.)
+    return this.productivityData;
+  }
+
   // Calculation methods
   toggleCalculationMenu() {
     this.showCalculationMenu = !this.showCalculationMenu;
   }
 
   calculateStatistics(type: string) {
-    if (this.productivityData.length === 0) {
+    const currentData = this.getCurrentViewData();
+    
+    if (currentData.length === 0) {
       this.calculationResults = {
         error: 'No data available for calculation'
       };
@@ -1221,22 +1445,22 @@ export class Productivity implements OnInit {
 
     switch (type) {
       case 'average':
-        result = this.calculateAverage();
+        result = this.calculateAverage(currentData);
         break;
       case 'min':
-        result = this.calculateMin();
+        result = this.calculateMin(currentData);
         break;
       case 'max':
-        result = this.calculateMax();
+        result = this.calculateMax(currentData);
         break;
       case 'sum':
-        result = this.calculateSum();
+        result = this.calculateSum(currentData);
         break;
       case 'count':
-        result = this.calculateCount();
+        result = this.calculateCount(currentData);
         break;
       case 'median':
-        result = this.calculateMedian();
+        result = this.calculateMedian(currentData);
         break;
       default:
         result = { error: 'Unknown calculation type' };
@@ -1246,68 +1470,68 @@ export class Productivity implements OnInit {
     this.showCalculationMenu = false;
   }
 
-  calculateAverage() {
-    const percentages = this.productivityData.map(r => r.productivityPercentage);
+  calculateAverage(data: ProductivityData[]) {
+    const percentages = data.map(r => r.productivityPercentage);
     
     return {
       type: 'Average',
       productivityPercentage: percentages.reduce((a, b) => a + b, 0) / percentages.length,
-      recordCount: this.productivityData.length
+      recordCount: data.length
     };
   }
 
-  calculateMin() {
-    const percentages = this.productivityData.map(r => r.productivityPercentage);
+  calculateMin(data: ProductivityData[]) {
+    const percentages = data.map(r => r.productivityPercentage);
     const minPercentage = Math.min(...percentages);
-    const minRecord = this.productivityData.find(r => r.productivityPercentage === minPercentage);
+    const minRecord = data.find(r => r.productivityPercentage === minPercentage);
     
     return {
       type: 'Minimum',
       productivityPercentage: minPercentage,
       record: minRecord,
-      recordCount: this.productivityData.length
+      recordCount: data.length
     };
   }
 
-  calculateMax() {
-    const percentages = this.productivityData.map(r => r.productivityPercentage);
+  calculateMax(data: ProductivityData[]) {
+    const percentages = data.map(r => r.productivityPercentage);
     const maxPercentage = Math.max(...percentages);
-    const maxRecord = this.productivityData.find(r => r.productivityPercentage === maxPercentage);
+    const maxRecord = data.find(r => r.productivityPercentage === maxPercentage);
     
     return {
       type: 'Maximum',
       productivityPercentage: maxPercentage,
       record: maxRecord,
-      recordCount: this.productivityData.length
+      recordCount: data.length
     };
   }
 
-  calculateSum() {
-    const percentages = this.productivityData.map(r => r.productivityPercentage);
+  calculateSum(data: ProductivityData[]) {
+    const percentages = data.map(r => r.productivityPercentage);
     
     return {
       type: 'Sum',
       totalProductivity: percentages.reduce((a, b) => a + b, 0),
-      recordCount: this.productivityData.length
+      recordCount: data.length
     };
   }
 
-  calculateCount() {
-    const uniqueAssociates = new Set(this.productivityData.map(r => r.associateName)).size;
-    const uniqueWeeks = new Set(this.productivityData.map(r => r.week)).size;
-    const uniqueMonths = new Set(this.productivityData.map(r => r.month)).size;
+  calculateCount(data: ProductivityData[]) {
+    const uniqueAssociates = new Set(data.map(r => r.associateName)).size;
+    const uniqueWeeks = new Set(data.map(r => r.week)).size;
+    const uniqueMonths = new Set(data.map(r => r.month)).size;
     
     return {
       type: 'Count',
-      totalRecords: this.productivityData.length,
+      totalRecords: data.length,
       uniqueAssociates: uniqueAssociates,
       uniqueWeeks: uniqueWeeks,
       uniqueMonths: uniqueMonths
     };
   }
 
-  calculateMedian() {
-    const percentages = [...this.productivityData.map(r => r.productivityPercentage)].sort((a, b) => a - b);
+  calculateMedian(data: ProductivityData[]) {
+    const percentages = [...data.map(r => r.productivityPercentage)].sort((a, b) => a - b);
     const mid = Math.floor(percentages.length / 2);
     const median = percentages.length % 2 !== 0 
       ? percentages[mid] 
@@ -1316,7 +1540,7 @@ export class Productivity implements OnInit {
     return {
       type: 'Median',
       productivityPercentage: median,
-      recordCount: this.productivityData.length
+      recordCount: data.length
     };
   }
 

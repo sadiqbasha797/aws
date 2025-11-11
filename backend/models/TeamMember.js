@@ -23,12 +23,6 @@ const teamMemberSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false // Don't include password in queries by default
   },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    trim: true,
-    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
-  },
   da_id: {
     type: String,
     unique: true,
@@ -107,13 +101,20 @@ teamMemberSchema.index({ managerId: 1 });
 teamMemberSchema.index({ passwordResetToken: 1 });
 teamMemberSchema.index({ emailVerificationToken: 1 });
 
-// Pre-save middleware to generate DA ID if not provided
+// Pre-save middleware to generate DA ID from email if not provided
 teamMemberSchema.pre('save', function(next) {
-  if (!this.da_id) {
-    // Generate a DA ID: DA + timestamp + random number
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    this.da_id = `DA${timestamp}${random}`;
+  if (!this.da_id && this.email) {
+    // Extract DA ID from email: part before @ symbol
+    // Example: test@example.com -> da_id = "TEST"
+    const emailParts = this.email.split('@');
+    if (emailParts.length > 0 && emailParts[0]) {
+      // Extract the part before @ and remove any non-alphanumeric characters
+      // to ensure it matches the DA ID validation pattern
+      const emailPrefix = emailParts[0].replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (emailPrefix) {
+        this.da_id = emailPrefix;
+      }
+    }
   }
   next();
 });

@@ -25,6 +25,7 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/processes', require('./routes/processRoutes'));
 app.use('/api/quick-links', require('./routes/quickLinkRoutes'));
 app.use('/api/audit-docs', require('./routes/auditDocRoutes'));
+app.use('/api/reliability-docs', require('./routes/reliabilityDocRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

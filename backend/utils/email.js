@@ -37,7 +37,7 @@ const replaceTemplatePlaceholders = (template, placeholders) => {
 };
 
 // Function to send verification email to team member
-const sendVerificationEmail = async (teamMember, verificationToken) => {
+const sendVerificationEmail = async (teamMember, verificationToken, password) => {
   try {
     const template = await readEmailTemplate('verification-email.html');
     
@@ -46,7 +46,9 @@ const sendVerificationEmail = async (teamMember, verificationToken) => {
     const verificationUrl = `${frontendUrl}/verify-email/${teamMember._id}/${verificationToken}`;
     
     const placeholders = {
-      name: teamMember.name,
+      name: escapeHtml(teamMember.name),
+      email: escapeHtml(teamMember.email),
+      password: escapeHtml(password || 'Not provided'),
       verificationUrl: verificationUrl
     };
     

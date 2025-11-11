@@ -140,15 +140,13 @@
             (click)="cancel()"
             [disabled]="isUploadingExcel"
             class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300 disabled:opacity-50">
-            <i class="fas fa-times mr-2"></i>
-            Cancel
+            <i class="fas fa-times"></i>
           </button>
           <button 
             type="submit" 
             [disabled]="isUploadingExcel || !selectedExcelFile || !excelUploadForm.year"
             class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
             <i *ngIf="isUploadingExcel" class="fas fa-spinner fa-spin mr-2"></i>
-            <i *ngIf="!isUploadingExcel" class="fas fa-upload mr-2"></i>
             {{ isUploadingExcel ? 'Uploading...' : 'Upload Data' }}
           </button>
         </div>
@@ -262,15 +260,13 @@
             type="button" 
             (click)="cancel()"
             class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300">
-            <i class="fas fa-times mr-2"></i>
-            Cancel
+            <i class="fas fa-times"></i>
           </button>
           <button 
             type="submit" 
             [disabled]="loading || isLoadingTeamMembers"
             class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
             <i *ngIf="loading" class="fas fa-spinner fa-spin mr-2"></i>
-            <i *ngIf="!loading" class="fas fa-save mr-2"></i>
             {{ loading ? 'Creating...' : 'Create Productivity Record' }}
           </button>
         </div>

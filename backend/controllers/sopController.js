@@ -169,7 +169,7 @@ const getSOPById = async (req, res) => {
 const updateSOP = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, process, sopUrl } = req.body;
+    const { title, process, sopUrl, version } = req.body;
     const user = req.user;
 
     const sop = await SOP.findById(id);
@@ -182,6 +182,9 @@ const updateSOP = async (req, res) => {
     if (title) sop.title = title;
     if (process) sop.process = process;
     if (sopUrl !== undefined) sop.sopUrl = sopUrl || undefined;
+    if (version !== undefined && version !== null) {
+      sop.version = parseFloat(version) || 1;
+    }
 
     // Update updatedBy information
     sop.updatedBy = {

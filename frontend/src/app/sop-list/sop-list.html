@@ -1,35 +1,30 @@
-<div class="min-h-screen bg-gray-50 p-6">
+<div class="min-h-screen bg-gray-50 p-4">
   <!-- Header -->
-  <div class="mb-8">
+  <div class="mb-4">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div class="flex items-center space-x-3">
-        <div class="flex items-center justify-center w-12 h-12 bg-orange-500 rounded-lg">
-          <i class="fas fa-file-alt text-white text-xl"></i>
+        <div class="flex items-center justify-center w-10 h-10 bg-orange-500 rounded-lg">
+          <i class="fas fa-file-alt text-white text-lg"></i>
         </div>
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">SOP & Quick Links</h1>
-          <p class="text-gray-600 mt-1">Manage and access your organization's SOPs and quick links</p>
+          <h1 class="text-2xl font-bold text-gray-900">SOP & Quick Links</h1>
+          <p class="text-gray-600 mt-0.5 text-sm">Manage and access your organization's SOPs and quick links</p>
         </div>
       </div>
-      <div class="flex items-center space-x-4">
-        <!-- User Role Badge -->
-        <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-          <i class="fas fa-user-tag mr-1"></i>
-          {{ userRole || 'Not set' }}
-        </div>
+      <div class="flex items-center space-x-3">
         <!-- Create Buttons -->
         <button 
           *ngIf="activeTab === 'sops' && canCreateSOP()" 
-          class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+          class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
           (click)="createSOP()">
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus text-xs"></i>
           <span>Create SOP</span>
         </button>
         <button 
           *ngIf="activeTab === 'quickLinks'" 
-          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
           (click)="createQuickLink()">
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus text-xs"></i>
           <span>Create Quick Link</span>
         </button>
       </div>
@@ -37,30 +32,30 @@
   </div>
 
   <!-- Tabs -->
-  <div class="mb-6 border-b border-gray-200">
-    <nav class="flex space-x-8">
+  <div class="mb-4 border-b border-gray-200">
+    <nav class="flex space-x-6">
       <button
         (click)="switchTab('sops')"
         [class]="activeTab === 'sops' 
-          ? 'border-b-2 border-orange-500 text-orange-600 font-medium py-4 px-1' 
-          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
-        <i class="fas fa-file-alt mr-2"></i>
+          ? 'border-b-2 border-orange-500 text-orange-600 font-medium py-2 px-1 text-sm' 
+          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-1 text-sm'">
+        <i class="fas fa-file-alt mr-1.5 text-xs"></i>
         SOPs
       </button>
       <button
         (click)="switchTab('quickLinks')"
         [class]="activeTab === 'quickLinks' 
-          ? 'border-b-2 border-blue-500 text-blue-600 font-medium py-4 px-1' 
-          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
-        <i class="fas fa-link mr-2"></i>
+          ? 'border-b-2 border-blue-500 text-blue-600 font-medium py-2 px-1 text-sm' 
+          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-1 text-sm'">
+        <i class="fas fa-link mr-1.5 text-xs"></i>
         Quick Links
       </button>
       <button
         (click)="switchTab('trash')"
         [class]="activeTab === 'trash' 
-          ? 'border-b-2 border-red-500 text-red-600 font-medium py-4 px-1' 
-          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1'">
-        <i class="fas fa-trash mr-2"></i>
+          ? 'border-b-2 border-red-500 text-red-600 font-medium py-2 px-1 text-sm' 
+          : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-1 text-sm'">
+        <i class="fas fa-trash mr-1.5 text-xs"></i>
         Trash
       </button>
     </nav>
@@ -78,75 +73,18 @@
     </button>
   </div>
 
-  <!-- Search and Filters (only shown when viewing SOPs) -->
-  <div *ngIf="selectedProcess && activeTab === 'sops'" class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-    <!-- Search Bar -->
-    <div class="p-6 pb-4">
-      <div class="flex items-center justify-between mb-4">
-        <div class="relative flex-1 max-w-md">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-search text-gray-400"></i>
-          </div>
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (keyup.enter)="onSearch()"
-            placeholder="Search SOPs by title or process..."
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200">
-          <button 
-            (click)="onSearch()"
-            class="absolute inset-y-0 right-0 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-r-lg transition-colors duration-200">
-            Search
-          </button>
-        </div>
-        
-        <!-- Filter Toggle Button -->
-        <button 
-          (click)="toggleFilters()"
-          class="ml-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-filter"></i>
-          <span>Filters</span>
-          <i class="fas fa-chevron-down transition-transform duration-200" 
-             [class.rotate-180]="showFilters"></i>
-        </button>
+  <!-- Search Bar (only shown when viewing SOPs) -->
+  <div *ngIf="selectedProcess && activeTab === 'sops'" class="mb-4">
+    <div class="relative max-w-md">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <i class="fas fa-search text-gray-400 text-sm"></i>
       </div>
-    </div>
-
-    <!-- Filter Controls - Toggleable -->
-    <div *ngIf="showFilters" class="px-6 pb-6 border-t border-gray-100 pt-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="flex items-center space-x-2">
-          <label for="sortBy" class="text-sm font-medium text-gray-700">Sort by:</label>
-          <select 
-            id="sortBy"
-            [(ngModel)]="sortBy" 
-            (change)="onSortChange()"
-            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-            <option value="createdAt">Created Date</option>
-            <option value="updatedAt">Updated Date</option>
-            <option value="title">Title</option>
-          </select>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <label for="sortOrder" class="text-sm font-medium text-gray-700">Order:</label>
-          <select 
-            id="sortOrder"
-            [(ngModel)]="sortOrder" 
-            (change)="onSortChange()"
-            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
-          </select>
-        </div>
-
-        <button 
-          (click)="clearFilters()"
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-1">
-          <i class="fas fa-times"></i>
-          <span>Clear Filters</span>
-        </button>
-      </div>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (keyup.enter)="onSearch()"
+        placeholder="Search SOPs..."
+        class="block w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200">
     </div>
   </div>
 
@@ -183,38 +121,30 @@
     </div>
 
     <!-- Processes Grid -->
-    <div *ngIf="processes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-8">
+    <div *ngIf="processes.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 mb-8">
       <div 
         *ngFor="let process of processes" 
-        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full"
+        class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200 cursor-pointer group"
         (click)="selectProcess(process.processName)">
         
-        <!-- Card Header -->
-        <div class="p-6 pb-4">
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center space-x-3">
-              <div class="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-lg flex-shrink-0">
-                <i class="fas fa-folder text-orange-600 text-xl"></i>
+        <!-- Card Content -->
+        <div class="p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2 flex-1 min-w-0">
+              <div class="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-md flex-shrink-0">
+                <i class="fas fa-folder text-orange-600 text-sm"></i>
               </div>
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200">
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 truncate">
                   {{ process.processName }}
                 </h3>
-                <p class="text-sm text-gray-600 mt-1">
+                <p class="text-xs text-gray-600 mt-0.5">
                   {{ process.count }} {{ process.count === 1 ? 'SOP' : 'SOPs' }}
                 </p>
               </div>
             </div>
+            <i class="fas fa-chevron-right text-orange-600 text-xs ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"></i>
           </div>
-        </div>
-
-        <!-- Card Footer -->
-        <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100">
-          <button class="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1 group-hover:text-orange-700">
-            <i class="fas fa-eye"></i>
-            <span>View SOPs</span>
-            <i class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform duration-200"></i>
-          </button>
         </div>
       </div>
     </div>
@@ -242,46 +172,121 @@
 
   <!-- SOPs List View (when process is selected) -->
   <div *ngIf="!loading && !error && selectedProcess">
-    <!-- SOPs Grid -->
-    <div *ngIf="processSOPs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mb-8">
-      <div 
-        *ngFor="let sop of processSOPs" 
-        class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full"
-        (click)="viewSOP(sop)">
-        
-        <!-- Card Header -->
-        <div class="p-6 pb-4">
-          <div class="flex items-start justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 line-clamp-2">
-              {{ sop.title || 'Untitled SOP' }}
-            </h3>
-          </div>
+    <!-- Process Header -->
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold text-gray-900">
+        {{ selectedProcess }} - SOPs
+      </h2>
+      <p class="text-sm text-gray-600 mt-1">
+        {{ processSOPs.length }} {{ processSOPs.length === 1 ? 'SOP' : 'SOPs' }} found
+      </p>
+    </div>
 
-          <!-- Meta Information -->
-          <div class="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-4">
-            <div class="flex items-center space-x-1">
-              <i class="fas fa-user w-3"></i>
-              <span class="truncate">{{ sop.createdBy.name || 'Unknown' }}</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <i class="fas fa-calendar w-3"></i>
-              <span>{{ formatDate(sop.createdAt) }}</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <i class="fas fa-paperclip w-3"></i>
-              <span>{{ sop.documents.length || 0 }} docs</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card Footer -->
-        <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100">
-          <button class="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1 group-hover:text-orange-700">
-            <i class="fas fa-eye"></i>
-            <span>View Details</span>
-            <i class="fas fa-arrow-right ml-1 transform group-hover:translate-x-1 transition-transform duration-200"></i>
-          </button>
-        </div>
+    <!-- SOPs Table -->
+    <div *ngIf="processSOPs.length > 0" class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Title
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Process
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                SOP Link
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Version
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created By
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created Date
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Updated Date
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let sop of processSOPs" class="hover:bg-gray-50 transition-colors duration-150">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">
+                  {{ sop.title || 'Untitled SOP' }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {{ sop.process || 'N/A' }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div *ngIf="sop.sopUrl" class="text-sm">
+                  <a [href]="sop.sopUrl" target="_blank" class="text-orange-600 hover:text-orange-700 flex items-center">
+                    <i class="fas fa-external-link-alt mr-2"></i>
+                    <span>View SOP</span>
+                  </a>
+                </div>
+                <div *ngIf="!sop.sopUrl" class="text-sm text-gray-400">
+                  N/A
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                  v{{ sop.versionNumber || sop.version || 1 }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {{ sop.createdBy.name || 'N/A' }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ sop.createdBy.email || '' }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {{ formatDate(sop.createdAt) }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {{ formatDate(sop.updatedAt) }}
+                </div>
+                <div *ngIf="sop.updatedBy" class="text-xs text-gray-500">
+                  by {{ sop.updatedBy.name }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div *ngIf="canEditSOP(sop) || canDeleteSOP(sop)" class="flex items-center space-x-2">
+                  <button
+                    *ngIf="canEditSOP(sop)"
+                    (click)="editSOP(sop); $event.stopPropagation()"
+                    class="text-orange-600 hover:text-orange-700 p-2 rounded-lg hover:bg-orange-50 transition-colors duration-200"
+                    title="Edit SOP">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button
+                    *ngIf="canDeleteSOP(sop)"
+                    (click)="deleteSOP(sop); $event.stopPropagation()"
+                    class="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200"
+                    title="Delete SOP">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <div *ngIf="!canEditSOP(sop) && !canDeleteSOP(sop)" class="text-sm text-gray-400">
+                  -
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -339,75 +344,18 @@
 
   <!-- Quick Links Content -->
   <div *ngIf="activeTab === 'quickLinks'">
-    <!-- Search and Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-      <!-- Search Bar -->
-      <div class="p-6 pb-4">
-        <div class="flex items-center justify-between mb-4">
-          <div class="relative flex-1 max-w-md">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-search text-gray-400"></i>
-            </div>
-            <input 
-              type="text" 
-              [(ngModel)]="quickLinksSearchTerm" 
-              (keyup.enter)="onQuickLinksSearch()"
-              placeholder="Search quick links by title or URL..."
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-            <button 
-              (click)="onQuickLinksSearch()"
-              class="absolute inset-y-0 right-0 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-r-lg transition-colors duration-200">
-              Search
-            </button>
-          </div>
-          
-          <!-- Filter Toggle Button -->
-          <button 
-            (click)="toggleQuickLinksFilters()"
-            class="ml-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-            <i class="fas fa-filter"></i>
-            <span>Filters</span>
-            <i class="fas fa-chevron-down transition-transform duration-200" 
-               [class.rotate-180]="showQuickLinksFilters"></i>
-          </button>
+    <!-- Search Bar -->
+    <div class="mb-4">
+      <div class="relative max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="fas fa-search text-gray-400 text-sm"></i>
         </div>
-      </div>
-
-      <!-- Filter Controls - Toggleable -->
-      <div *ngIf="showQuickLinksFilters" class="px-6 pb-6 border-t border-gray-100 pt-4">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center space-x-2">
-            <label for="quickLinksSortBy" class="text-sm font-medium text-gray-700">Sort by:</label>
-            <select 
-              id="quickLinksSortBy"
-              [(ngModel)]="quickLinksSortBy" 
-              (change)="onQuickLinksSortChange()"
-              class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="createdAt">Created Date</option>
-              <option value="updatedAt">Updated Date</option>
-              <option value="title">Title</option>
-            </select>
-          </div>
-
-          <div class="flex items-center space-x-2">
-            <label for="quickLinksSortOrder" class="text-sm font-medium text-gray-700">Order:</label>
-            <select 
-              id="quickLinksSortOrder"
-              [(ngModel)]="quickLinksSortOrder" 
-              (change)="onQuickLinksSortChange()"
-              class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
-
-          <button 
-            (click)="clearQuickLinksFilters()"
-            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-1">
-            <i class="fas fa-times"></i>
-            <span>Clear Filters</span>
-          </button>
-        </div>
+        <input 
+          type="text" 
+          [(ngModel)]="quickLinksSearchTerm" 
+          (keyup.enter)="onQuickLinksSearch()"
+          placeholder="Search quick links..."
+          class="block w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
       </div>
     </div>
 
@@ -435,50 +383,26 @@
     </div>
 
     <!-- Quick Links Grid -->
-    <div *ngIf="!quickLinksLoading && !quickLinksError && quickLinks.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
+    <div *ngIf="!quickLinksLoading && !quickLinksError && quickLinks.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 mb-8">
       <div 
         *ngFor="let quickLink of quickLinks" 
-        class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 group flex flex-col max-w-xs mx-auto w-full">
+        class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 group flex flex-col">
         
         <!-- Card Content -->
-        <div class="p-4 flex-1 flex flex-col">
+        <div class="p-3 flex-1 flex flex-col">
           <!-- Title -->
-          <div class="mb-2">
+          <div class="mb-2 flex-1">
             <h3 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2">
               {{ quickLink.title }}
             </h3>
           </div>
-
-          <!-- Link Preview -->
-          <div class="mb-3 flex-1">
-            <a 
-              [href]="quickLink.link" 
-              target="_blank"
-              (click)="openLink(quickLink.link); $event.stopPropagation()"
-              class="text-xs text-blue-600 hover:text-blue-700 hover:underline truncate block">
-              <i class="fas fa-external-link-alt mr-1 text-xs"></i>
-              <span class="truncate">{{ quickLink.link }}</span>
-            </a>
-          </div>
-
-          <!-- Meta Information -->
-          <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
-            <div class="flex items-center space-x-1 truncate">
-              <i class="fas fa-user text-xs"></i>
-              <span class="truncate">{{ quickLink.createdBy.name || 'Unknown' }}</span>
-            </div>
-            <div class="flex items-center space-x-1 ml-2">
-              <i class="fas fa-calendar text-xs"></i>
-              <span>{{ formatDate(quickLink.createdAt) }}</span>
-            </div>
-          </div>
         </div>
 
         <!-- Card Footer -->
-        <div class="px-4 py-3 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-between">
+        <div class="px-3 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-between">
           <button 
             (click)="openLink(quickLink.link)"
-            class="text-blue-600 hover:text-blue-700 font-medium text-xs flex items-center space-x-1 group-hover:text-blue-700">
+            class="text-blue-600 hover:text-blue-700 font-medium text-xs flex items-center space-x-1">
             <i class="fas fa-external-link-alt text-xs"></i>
             <span>Open</span>
           </button>
@@ -486,13 +410,13 @@
           <div class="flex items-center space-x-1" *ngIf="canEditQuickLink(quickLink)">
             <button 
               (click)="editQuickLink(quickLink); $event.stopPropagation()"
-              class="text-gray-500 hover:text-blue-600 p-1.5 rounded transition-colors duration-200"
+              class="text-gray-500 hover:text-blue-600 p-1 rounded transition-colors duration-200"
               title="Edit">
               <i class="fas fa-edit text-xs"></i>
             </button>
             <button 
               (click)="deleteQuickLink(quickLink); $event.stopPropagation()"
-              class="text-gray-500 hover:text-red-600 p-1.5 rounded transition-colors duration-200"
+              class="text-gray-500 hover:text-red-600 p-1 rounded transition-colors duration-200"
               title="Delete">
               <i class="fas fa-trash text-xs"></i>
             </button>
@@ -572,21 +496,6 @@
         </div>
       </div>
 
-      <!-- Filter Tabs -->
-      <div class="flex items-center space-x-2 bg-white rounded-lg p-2 shadow-sm border border-gray-200">
-        <button
-          (click)="filterBinByCollection('all')"
-          [class]="selectedBinCollection === 'all' ? 'bg-orange-500 text-white' : 'bg-transparent text-gray-700 hover:bg-gray-100'"
-          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200">
-          <i class="fas fa-th mr-2"></i>All Items
-        </button>
-        <button
-          (click)="filterBinByCollection('sops')"
-          [class]="selectedBinCollection === 'sops' ? 'bg-orange-500 text-white' : 'bg-transparent text-gray-700 hover:bg-gray-100'"
-          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-200">
-          <i class="fas fa-file-alt mr-2"></i>SOPs
-        </button>
-      </div>
     </div>
 
     <!-- Loading State -->

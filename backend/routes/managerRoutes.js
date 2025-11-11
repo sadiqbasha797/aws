@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  getActiveManagersForSignup,
   getAllManagers,
   getManager,
   getMe,
@@ -17,8 +18,8 @@ const { protect, restrictTo, checkActive } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Public routes (if any)
-// None for now
+// Public routes
+router.get('/public/active', getActiveManagersForSignup);
 
 // Protected routes
 router.use(protect); // All routes below this middleware are protected

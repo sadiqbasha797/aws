@@ -6,6 +6,7 @@ import { ReliabilityService, ReliabilityData, PerformanceStats } from '../servic
 import { AuthService } from '../services/auth.service';
 import { ProcessService, Process } from '../services/process.service';
 import { AuditDocService, AuditDoc } from '../services/audit-doc.service';
+import { ReliabilityDocService, ReliabilityDoc } from '../services/reliability-doc.service';
 
 interface JobGroup {
   jobId: string;
@@ -73,6 +74,7 @@ export class Reliability implements OnInit {
   columnFilters = {
     selectedDaIds: [] as string[],
     selectedProcesses: [] as string[],
+    selectedWorkerIds: [] as string[],
     dateFrom: undefined as string | undefined,
     dateTo: undefined as string | undefined
   };
@@ -80,15 +82,18 @@ export class Reliability implements OnInit {
   // Filter dropdown visibility
   showDaIdFilter = false;
   showProcessFilter = false;
+  showWorkerIdFilter = false;
   showDateFilter = false;
   
   // Search terms for filter dropdowns
   daIdSearchTerm = '';
   processSearchTerm = '';
+  workerIdSearchTerm = '';
   
   // Dropdown positions
   daIdFilterPosition = { top: 0, left: 0 };
   processFilterPosition = { top: 0, left: 0 };
+  workerIdFilterPosition = { top: 0, left: 0 };
   dateFilterPosition = { top: 0, left: 0 };
   
   // Calculation menu
@@ -104,12 +109,35 @@ export class Reliability implements OnInit {
   expandedProcesses: Set<string> = new Set();
   expandedJobIds: Set<string> = new Set();
   
+  // Cached month options to avoid calling method in template
+  monthOptions = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
+  ];
+  
+  // Flag to prevent infinite loops
+  private isApplyingFilters = false;
+  // Flag to prevent multiple simultaneous batch processing
+  private isBuildingHierarchy = false;
+  
   // View state - 'processes', 'jobIds', 'records', 'allRecords'
   currentView: 'processes' | 'jobIds' | 'records' | 'allRecords' = 'processes';
   selectedProcessForView: ProcessGroup | null = null;
   selectedJobGroupForView: JobGroup | null = null;
+  originalRecordsForView: ReliabilityData[] = []; // Store original records for filtering
   showAllRecordsTable = false;
-  processViewTab: 'jobIds' | 'audit' = 'jobIds'; // Tab within process view
+  processViewTab: 'jobIds' | 'audit' | 'docs' = 'jobIds'; // Tab within process view
+  jobViewTab: 'table' | 'docs' = 'table'; // Tab within job view (records view)
   
   // Form for creating/editing reliability data
   reliabilityForm: Partial<ReliabilityData> = {
@@ -138,13 +166,21 @@ export class Reliability implements OnInit {
   auditDocTotalRecords = 0;
   auditDocSearch = '';
 
+  // Reliability Docs properties
+  reliabilityDocs: ReliabilityDoc[] = [];
+  reliabilityDocPage = 1;
+  reliabilityDocTotalPages = 1;
+  reliabilityDocTotalRecords = 0;
+  reliabilityDocSearch = '';
+
   constructor(
     private reliabilityService: ReliabilityService,
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
     private processService: ProcessService,
-    private auditDocService: AuditDocService
+    private auditDocService: AuditDocService,
+    private reliabilityDocService: ReliabilityDocService
   ) {}
 
   ngOnInit() {
@@ -180,11 +216,18 @@ export class Reliability implements OnInit {
   }
 
   private loadInitialData() {
-    if (this.isLoading || this.isInitialized) {
-      return; // Prevent multiple simultaneous loads
+    // Prevent multiple simultaneous loads
+    if (this.isLoading) {
+      return;
+    }
+    
+    // Only check isInitialized if we're not explicitly reloading
+    if (this.isInitialized && !this.isApplyingFilters) {
+      return;
     }
     
     this.isInitialized = true;
+    this.isApplyingFilters = false;
     
     if (this.userRole === 'manager') {
       this.loadManagerData();
@@ -196,12 +239,13 @@ export class Reliability implements OnInit {
   private loadManagerData() {
     this.isLoading = true;
     
-    // If showing all (no month filter), load all records
+    // If showing all (no month filter), load all records with a reasonable limit
     if (!this.filters.month) {
       // Prepare filters for loading all records
+      // Use a reasonable limit to avoid freezing the browser
       const filterParams: any = {
         page: 1,
-        limit: 10000 // Large limit to get all records
+        limit: 5000 // Reduced from 10000 to prevent freezing
       };
       
       // Only add defined filter values
@@ -219,7 +263,10 @@ export class Reliability implements OnInit {
             // Store all records before column filtering
             this.allReliabilityData = records;
             // Apply column filters (which also builds hierarchical structure)
+            // Use setTimeout to avoid blocking UI thread
+            setTimeout(() => {
             this.applyColumnFilters();
+            }, 0);
             this.totalRecords = records.length;
             this.totalPages = 1; // Single page when showing all
           }
@@ -255,6 +302,7 @@ export class Reliability implements OnInit {
             // Store all records before column filtering
             this.allReliabilityData = records;
             // Apply column filters (which also builds hierarchical structure)
+            // For paginated data, process immediately as it's smaller
             this.applyColumnFilters();
             this.totalRecords = allData.total || 0;
             this.totalPages = allData.pages || 1;
@@ -273,11 +321,11 @@ export class Reliability implements OnInit {
   private loadUserData() {
     this.isLoading = true;
     
-    // If showing all (no month filter), load all records
+    // If showing all (no month filter), load all records with a reasonable limit
     if (!this.filters.month) {
       this.reliabilityService.getMyReliabilityData(
         1,
-        10000, // Large limit to get all records
+        5000, // Reduced from 10000 to prevent freezing
         this.filters.year,
         undefined // No month filter
       ).subscribe({
@@ -290,7 +338,10 @@ export class Reliability implements OnInit {
             // Store all records before column filtering
             this.allReliabilityData = records;
             // Apply column filters (which also builds hierarchical structure)
+            // Use setTimeout to avoid blocking UI thread
+            setTimeout(() => {
             this.applyColumnFilters();
+            }, 0);
             this.totalRecords = records.length;
             this.totalPages = 1; // Single page when showing all
           }
@@ -319,6 +370,7 @@ export class Reliability implements OnInit {
             // Store all records before column filtering
             this.allReliabilityData = records;
             // Apply column filters (which also builds hierarchical structure)
+            // For paginated data, process immediately as it's smaller
             this.applyColumnFilters();
             this.totalRecords = response.total || 0;
             this.totalPages = response.pages || 1;
@@ -477,16 +529,26 @@ export class Reliability implements OnInit {
 
   // Filtering
   applyFilters() {
+    // Prevent infinite loops
+    if (this.isApplyingFilters || this.isLoading) {
+      return;
+    }
+    
+    this.isApplyingFilters = true;
     this.currentPage = 1;
     this.isInitialized = false;
-    this.loadInitialData();
     this.showFilters = false; // Auto-close filters after applying
+    
+    // Use setTimeout to break the change detection cycle
+    setTimeout(() => {
+      this.loadInitialData();
+    }, 0);
   }
 
   clearFilters() {
     this.filters = {
       year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1 as any,
+      month: undefined as any,
       week: undefined as any,
       search: '',
       minScore: undefined,
@@ -497,24 +559,35 @@ export class Reliability implements OnInit {
 
   // Show all records regardless of month
   showAll() {
+    if (this.isLoading) {
+      return;
+    }
     this.filters.month = undefined as any;
     this.filters.week = undefined as any;
     this.currentPage = 1;
     this.isInitialized = false;
     this.showAllRecordsTable = true; // Show all records in table view
-    // loadInitialData will handle loading all records when month filter is undefined
+    // Use setTimeout to break the change detection cycle
+    setTimeout(() => {
     this.loadInitialData();
+    }, 0);
   }
 
   // Reset to current month view
   showCurrentMonth() {
+    if (this.isLoading) {
+      return;
+    }
     this.filters.month = new Date().getMonth() + 1;
     this.filters.week = undefined as any;
     this.currentPage = 1;
     this.isInitialized = false;
     this.showAllRecordsTable = false; // Go back to hierarchical view
     this.currentView = 'processes'; // Reset to processes view
+    // Use setTimeout to break the change detection cycle
+    setTimeout(() => {
     this.loadInitialData();
+    }, 0);
   }
 
   // Compute ISO week number
@@ -841,7 +914,11 @@ export class Reliability implements OnInit {
 
   // Column filter methods
   getUniqueDaIds(): string[] {
-    const uniqueIds = [...new Set(this.allReliabilityData.map(r => r.daId).filter(id => id))];
+    // Get unique DA IDs from current view data
+    const data = this.currentView === 'records' && this.selectedJobGroupForView
+      ? (this.originalRecordsForView.length > 0 ? this.originalRecordsForView : this.selectedJobGroupForView.records)
+      : this.allReliabilityData;
+    const uniqueIds = [...new Set(data.map(r => r.daId).filter(id => id))];
     return uniqueIds.sort();
   }
 
@@ -866,6 +943,24 @@ export class Reliability implements OnInit {
     return this.getUniqueProcesses().filter(p => p.toLowerCase().includes(searchLower));
   }
 
+  getUniqueWorkerIds(): string[] {
+    // Get unique worker IDs from current view data (records view)
+    // Use original records if available to show all options
+    const data = this.currentView === 'records' && this.selectedJobGroupForView 
+      ? (this.originalRecordsForView.length > 0 ? this.originalRecordsForView : this.selectedJobGroupForView.records)
+      : this.allReliabilityData;
+    const uniqueIds = [...new Set(data.map(r => r.workerId).filter((id): id is string => !!id))];
+    return uniqueIds.sort();
+  }
+
+  getFilteredWorkerIds(): string[] {
+    if (!this.workerIdSearchTerm) {
+      return this.getUniqueWorkerIds();
+    }
+    const searchLower = this.workerIdSearchTerm.toLowerCase();
+    return this.getUniqueWorkerIds().filter(id => id.toLowerCase().includes(searchLower));
+  }
+
   toggleDaIdFilter(daId: string) {
     const index = this.columnFilters.selectedDaIds.indexOf(daId);
     if (index > -1) {
@@ -873,7 +968,11 @@ export class Reliability implements OnInit {
     } else {
       this.columnFilters.selectedDaIds.push(daId);
     }
-    this.applyColumnFilters();
+    if (this.currentView === 'records') {
+      this.applyRecordViewFilters();
+    } else {
+      this.applyColumnFilters();
+    }
   }
 
   toggleProcessFilter(process: string) {
@@ -886,6 +985,16 @@ export class Reliability implements OnInit {
     this.applyColumnFilters();
   }
 
+  toggleWorkerIdFilter(workerId: string) {
+    const index = this.columnFilters.selectedWorkerIds.indexOf(workerId);
+    if (index > -1) {
+      this.columnFilters.selectedWorkerIds.splice(index, 1);
+    } else {
+      this.columnFilters.selectedWorkerIds.push(workerId);
+    }
+    this.applyRecordViewFilters();
+  }
+
   isDaIdSelected(daId: string): boolean {
     return this.columnFilters.selectedDaIds.includes(daId);
   }
@@ -894,9 +1003,17 @@ export class Reliability implements OnInit {
     return this.columnFilters.selectedProcesses.includes(process);
   }
 
+  isWorkerIdSelected(workerId: string): boolean {
+    return this.columnFilters.selectedWorkerIds.includes(workerId);
+  }
+
   clearDaIdFilter() {
     this.columnFilters.selectedDaIds = [];
-    this.applyColumnFilters();
+    if (this.currentView === 'records') {
+      this.applyRecordViewFilters();
+    } else {
+      this.applyColumnFilters();
+    }
   }
 
   clearProcessFilter() {
@@ -904,15 +1021,76 @@ export class Reliability implements OnInit {
     this.applyColumnFilters();
   }
 
+  clearWorkerIdFilter() {
+    this.columnFilters.selectedWorkerIds = [];
+    this.applyRecordViewFilters();
+  }
+
   applyDateFilter() {
     this.showDateFilter = false;
-    this.applyColumnFilters();
+    if (this.currentView === 'records') {
+      this.applyRecordViewFilters();
+    } else {
+      this.applyColumnFilters();
+    }
   }
 
   clearDateFilter() {
     this.columnFilters.dateFrom = undefined;
     this.columnFilters.dateTo = undefined;
-    this.applyColumnFilters();
+    if (this.currentView === 'records') {
+      this.applyRecordViewFilters();
+    } else {
+      this.applyColumnFilters();
+    }
+  }
+
+  applyRecordViewFilters() {
+    // This method filters records in the records view
+    if (!this.selectedJobGroupForView) {
+      return;
+    }
+    
+    // Use original records if available, otherwise use current records
+    const sourceRecords = this.originalRecordsForView.length > 0 
+      ? this.originalRecordsForView 
+      : this.selectedJobGroupForView.records;
+    
+    let filtered = [...sourceRecords];
+    
+    // Filter by DA ID
+    if (this.columnFilters.selectedDaIds.length > 0) {
+      filtered = filtered.filter(r => this.columnFilters.selectedDaIds.includes(r.daId));
+    }
+    
+    // Filter by Worker ID
+    if (this.columnFilters.selectedWorkerIds.length > 0) {
+      filtered = filtered.filter(r => r.workerId && this.columnFilters.selectedWorkerIds.includes(r.workerId));
+    }
+    
+    // Filter by Date Range
+    if (this.columnFilters.dateFrom) {
+      const fromDate = new Date(this.columnFilters.dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate >= fromDate;
+      });
+    }
+    
+    if (this.columnFilters.dateTo) {
+      const toDate = new Date(this.columnFilters.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(r => {
+        const recordDate = new Date(r.createdAt!);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate <= toDate;
+      });
+    }
+    
+    // Update the job group records with filtered results
+    this.selectedJobGroupForView.records = filtered;
   }
 
   applyColumnFilters() {
@@ -950,20 +1128,86 @@ export class Reliability implements OnInit {
     }
 
     this.reliabilityData = filtered;
-    // Build hierarchical structure
-    this.buildHierarchicalStructure();
     
+    // Process hierarchical structure asynchronously to avoid blocking UI
+    // Use setTimeout to break up the work and allow the browser to render
+    if (this.reliabilityData.length > 1000) {
+      // For large datasets, process asynchronously
+      setTimeout(() => {
+    this.buildHierarchicalStructure();
     // If showAllRecordsTable is true, switch to all records view
     if (this.showAllRecordsTable && this.reliabilityData.length > 0) {
       this.currentView = 'allRecords';
+        }
+      }, 0);
+    } else {
+      // For smaller datasets, process immediately
+      this.buildHierarchicalStructure();
+      // If showAllRecordsTable is true, switch to all records view
+      if (this.showAllRecordsTable && this.reliabilityData.length > 0) {
+        this.currentView = 'allRecords';
+      }
     }
   }
 
   buildHierarchicalStructure() {
+    // Prevent multiple simultaneous builds
+    if (this.isBuildingHierarchy) {
+      return;
+    }
+    
+    try {
+      this.isBuildingHierarchy = true;
     const processMap = new Map<string, Map<string, ReliabilityData[]>>();
     
     // Group data by process and job_id
+      // Process in batches for large datasets to avoid blocking
+      const batchSize = 1000;
+      
+      if (this.reliabilityData.length > batchSize) {
+        // Process in batches for large datasets
+        let processed = 0;
+        
+        const processBatch = () => {
+          const end = Math.min(processed + batchSize, this.reliabilityData.length);
+          
+          for (let i = processed; i < end; i++) {
+            const record = this.reliabilityData[i];
+            if (!record) continue; // Safety check
+            
+            const processName = record.processname || 'Unknown Process';
+            const jobId = record.job_id || 'Unknown Job';
+            
+            if (!processMap.has(processName)) {
+              processMap.set(processName, new Map());
+            }
+            
+            const jobMap = processMap.get(processName)!;
+            if (!jobMap.has(jobId)) {
+              jobMap.set(jobId, []);
+            }
+            
+            jobMap.get(jobId)!.push(record);
+          }
+          
+          processed = end;
+          
+          if (processed < this.reliabilityData.length) {
+            // Process next batch asynchronously
+            setTimeout(processBatch, 0);
+          } else {
+            // All data processed, build structure
+            this.finishBuildingHierarchy(processMap);
+            this.isBuildingHierarchy = false;
+          }
+        };
+        
+        processBatch();
+      } else {
+        // Process all at once for small datasets
     this.reliabilityData.forEach(record => {
+          if (!record) return; // Safety check
+          
       const processName = record.processname || 'Unknown Process';
       const jobId = record.job_id || 'Unknown Job';
       
@@ -979,6 +1223,17 @@ export class Reliability implements OnInit {
       jobMap.get(jobId)!.push(record);
     });
     
+        this.finishBuildingHierarchy(processMap);
+        this.isBuildingHierarchy = false;
+      }
+    } catch (error) {
+      console.error('Error building hierarchical structure:', error);
+      this.processGroups = [];
+      this.isBuildingHierarchy = false;
+    }
+  }
+  
+  private finishBuildingHierarchy(processMap: Map<string, Map<string, ReliabilityData[]>>) {
     // Build ProcessGroup array
     this.processGroups = Array.from(processMap.entries()).map(([processName, jobMap]) => {
       const jobGroups: JobGroup[] = Array.from(jobMap.entries()).map(([jobId, records]) => {
@@ -1013,17 +1268,24 @@ export class Reliability implements OnInit {
       this.selectedProcessForView = processGroup;
       this.currentView = 'jobIds';
       this.processViewTab = 'jobIds'; // Default to job IDs tab
-      // Load audit docs for this process when manager clicks on process
+      // Load reliability docs for this process when manager clicks on process
       if (this.userRole === 'manager') {
-        this.loadAuditDocs();
+        this.loadReliabilityDocs();
       }
     }
   }
 
-  setProcessViewTab(tab: 'jobIds' | 'audit') {
+  setProcessViewTab(tab: 'jobIds' | 'audit' | 'docs') {
     this.processViewTab = tab;
     if (tab === 'audit' && this.userRole === 'manager') {
       this.loadAuditDocs();
+    }
+  }
+
+  setJobViewTab(tab: 'table' | 'docs') {
+    this.jobViewTab = tab;
+    if (tab === 'docs' && this.userRole === 'manager') {
+      this.loadReliabilityDocs();
     }
   }
 
@@ -1035,6 +1297,11 @@ export class Reliability implements OnInit {
       if (jobGroup) {
         this.selectedJobGroupForView = jobGroup;
         this.selectedProcessForView = processGroup; // Keep process context
+        // Store original records for filtering
+        this.originalRecordsForView = [...jobGroup.records];
+        // Clear record view specific filters when entering
+        this.columnFilters.selectedWorkerIds = [];
+        this.jobViewTab = 'table'; // Reset to table tab
         this.currentView = 'records';
       }
     }
@@ -1070,6 +1337,7 @@ export class Reliability implements OnInit {
   hasActiveFilters(): boolean {
     return this.columnFilters.selectedDaIds.length > 0 ||
            this.columnFilters.selectedProcesses.length > 0 ||
+           this.columnFilters.selectedWorkerIds.length > 0 ||
            !!this.columnFilters.dateFrom ||
            !!this.columnFilters.dateTo;
   }
@@ -1078,21 +1346,27 @@ export class Reliability implements OnInit {
     this.columnFilters = {
       selectedDaIds: [],
       selectedProcesses: [],
+      selectedWorkerIds: [],
       dateFrom: undefined,
       dateTo: undefined
     };
-    this.applyColumnFilters();
+    if (this.currentView === 'records') {
+      this.applyRecordViewFilters();
+    } else {
+      this.applyColumnFilters();
+    }
   }
 
   // Close all filter dropdowns
   closeAllFilters() {
     this.showDaIdFilter = false;
     this.showProcessFilter = false;
+    this.showWorkerIdFilter = false;
     this.showDateFilter = false;
   }
 
   // Calculate dropdown position based on button position
-  calculateDropdownPosition(event: MouseEvent, filterType: 'daId' | 'process' | 'date') {
+  calculateDropdownPosition(event: MouseEvent, filterType: 'daId' | 'process' | 'workerId' | 'date') {
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
     
@@ -1159,6 +1433,8 @@ export class Reliability implements OnInit {
       this.daIdFilterPosition = position;
     } else if (filterType === 'process') {
       this.processFilterPosition = position;
+    } else if (filterType === 'workerId') {
+      this.workerIdFilterPosition = position;
     } else {
       this.dateFilterPosition = position;
     }
@@ -1174,6 +1450,7 @@ export class Reliability implements OnInit {
     if (!wasOpen) {
       // Only close others when opening this one
       this.showProcessFilter = false;
+      this.showWorkerIdFilter = false;
       this.showDateFilter = false;
     }
   }
@@ -1188,6 +1465,22 @@ export class Reliability implements OnInit {
     if (!wasOpen) {
       // Only close others when opening this one
       this.showDaIdFilter = false;
+      this.showWorkerIdFilter = false;
+      this.showDateFilter = false;
+    }
+  }
+
+  toggleWorkerIdFilterMenu(event: MouseEvent) {
+    if (event) {
+      event.stopPropagation(); // Prevent document click from closing immediately
+    }
+    this.calculateDropdownPosition(event, 'workerId');
+    const wasOpen = this.showWorkerIdFilter;
+    this.showWorkerIdFilter = !wasOpen;
+    if (!wasOpen) {
+      // Only close others when opening this one
+      this.showDaIdFilter = false;
+      this.showProcessFilter = false;
       this.showDateFilter = false;
     }
   }
@@ -1203,6 +1496,7 @@ export class Reliability implements OnInit {
       // Only close others when opening this one
       this.showDaIdFilter = false;
       this.showProcessFilter = false;
+      this.showWorkerIdFilter = false;
     }
   }
 
@@ -1506,6 +1800,140 @@ export class Reliability implements OnInit {
       const halfMaxVisible = Math.floor(maxVisiblePages / 2);
       startPage = Math.max(1, this.auditDocPage - halfMaxVisible);
       endPage = Math.min(this.auditDocTotalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
+  // Reliability Docs methods
+  loadReliabilityDocs() {
+    if (this.userRole !== 'manager') return;
+    
+    this.isLoading = true;
+    const params: any = {
+      page: this.reliabilityDocPage,
+      limit: this.pageSize
+    };
+    
+    if (this.reliabilityDocSearch) {
+      params.search = this.reliabilityDocSearch;
+    }
+
+    // Filter by process if available
+    if (this.selectedProcessForView?.processName) {
+      params.processname = this.selectedProcessForView.processName;
+    }
+
+    // Filter by job_id if viewing a specific job
+    if (this.currentView === 'records' && this.selectedJobGroupForView?.jobId) {
+      params.job_id = this.selectedJobGroupForView.jobId;
+    }
+
+    this.reliabilityDocService.getAllReliabilityDocs(params).subscribe({
+      next: (response) => {
+        if (response.status === 'success' && response.data?.reliabilityDocs) {
+          this.reliabilityDocs = response.data.reliabilityDocs;
+          this.reliabilityDocTotalRecords = response.total || 0;
+          this.reliabilityDocTotalPages = response.pages || 1;
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading reliability docs:', error);
+        this.errorMessage = 'Failed to load reliability documents';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  deleteReliabilityDoc(id: string) {
+    if (!confirm('Are you sure you want to delete this reliability document?')) {
+      return;
+    }
+
+    if (this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.reliabilityDocService.deleteReliabilityDoc(id).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response.status === 'success') {
+          this.successMessage = 'Reliability document deleted successfully';
+          setTimeout(() => {
+            this.loadReliabilityDocs();
+          }, 100);
+        } else {
+          this.errorMessage = response.message || 'Delete failed';
+        }
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error deleting reliability doc:', error);
+        this.errorMessage = error.error?.message || 'Failed to delete reliability document';
+      }
+    });
+  }
+
+  goToReliabilityDocPage(page: number) {
+    if (page >= 1 && page <= this.reliabilityDocTotalPages) {
+      this.reliabilityDocPage = page;
+      this.loadReliabilityDocs();
+    }
+  }
+
+  searchReliabilityDocs() {
+    this.reliabilityDocPage = 1;
+    this.loadReliabilityDocs();
+  }
+
+  clearReliabilityDocSearch() {
+    this.reliabilityDocSearch = '';
+    this.reliabilityDocPage = 1;
+    this.loadReliabilityDocs();
+  }
+
+  formatReliabilityDocDate(date: string | Date): string {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  formatReliabilityDocTimestamp(date: string | Date): string {
+    return new Date(date).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getReliabilityDocPaginationPages(): number[] {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = 1;
+    let endPage = this.reliabilityDocTotalPages;
+    
+    if (this.reliabilityDocTotalPages > maxVisiblePages) {
+      const halfMaxVisible = Math.floor(maxVisiblePages / 2);
+      startPage = Math.max(1, this.reliabilityDocPage - halfMaxVisible);
+      endPage = Math.min(this.reliabilityDocTotalPages, startPage + maxVisiblePages - 1);
       
       if (endPage - startPage + 1 < maxVisiblePages) {
         startPage = Math.max(1, endPage - maxVisiblePages + 1);

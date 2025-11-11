@@ -164,7 +164,7 @@ export class SOPUpdateComponent implements OnInit {
       next: (response) => {
         this.creating = false;
         alert(`New version created successfully! This is now Version ${response.sop.versionNumber}.`);
-        this.router.navigate(['/sops', response.sop._id]);
+        this.router.navigate(['/sops']);
       },
       error: (error) => {
         console.error('Error creating SOP version:', error);
@@ -175,11 +175,7 @@ export class SOPUpdateComponent implements OnInit {
   }
 
   cancel(): void {
-    if (this.sop) {
-      this.router.navigate(['/sops', this.sop._id]);
-    } else {
-      this.router.navigate(['/sops']);
-    }
+    this.router.navigate(['/sops']);
   }
 
   goBack(): void {

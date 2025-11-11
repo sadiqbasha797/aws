@@ -21,7 +21,6 @@ export class SOPCreateComponent {
 
   loading = false;
   error = '';
-  selectedFiles: FileList | null = null;
 
   constructor(
     private sopService: SOPService,
@@ -49,13 +48,6 @@ export class SOPCreateComponent {
     }
   }
 
-  onFileSelect(event: any): void {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      this.selectedFiles = files;
-    }
-  }
-
   createSOP(): void {
     if (!this.sopData.title.trim()) {
       this.error = 'Title is required';
@@ -65,9 +57,9 @@ export class SOPCreateComponent {
     this.loading = true;
     this.error = '';
 
-    this.sopService.createSOP(this.sopData, this.selectedFiles || undefined).subscribe({
+    this.sopService.createSOP(this.sopData).subscribe({
       next: (response) => {
-        this.router.navigate(['/sops', response.sop._id]);
+        this.router.navigate(['/sops']);
       },
       error: (error) => {
         console.error('Error creating SOP:', error);
@@ -79,10 +71,5 @@ export class SOPCreateComponent {
 
   cancel(): void {
     this.router.navigate(['/sops']);
-  }
-
-  getSelectedFileArray(): File[] {
-    if (!this.selectedFiles) return [];
-    return Array.from(this.selectedFiles);
   }
 }

@@ -7,6 +7,7 @@ import { TeamMemberService } from '../services/team-member.service';
 import { AuthService } from '../services/auth.service';
 import { ExcelUploadService, ExcelUploadData } from '../services/excel-upload.service';
 import { ProcessService, Process } from '../services/process.service';
+import { ReliabilityDocService } from '../services/reliability-doc.service';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -77,7 +78,8 @@ export class ReliabilityCreateComponent implements OnInit {
     private router: Router,
     private authService: AuthService,
     private excelUploadService: ExcelUploadService,
-    private processService: ProcessService
+    private processService: ProcessService,
+    private reliabilityDocService: ReliabilityDocService
   ) {
     this.checkManagerAccess();
     this.generateYearOptions();
@@ -213,11 +215,13 @@ export class ReliabilityCreateComponent implements OnInit {
     const validTypes = [
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel.sheet.macroEnabled.12'
+      'application/vnd.ms-excel.sheet.macroEnabled.12',
+      'text/csv',
+      'application/csv'
     ];
     
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      this.error = 'Please select a valid Excel file (.xlsx or .xls)';
+    if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+      this.error = 'Please select a valid Excel or CSV file (.xlsx, .xls, or .csv)';
       return;
     }
 
@@ -484,33 +488,69 @@ export class ReliabilityCreateComponent implements OnInit {
         }
 
         if (allData.length === 0) {
-          this.error = 'No valid data to upload';
+          this.error = 'No valid data to upload. Please check that your Excel file contains: Worker ID, DA ID, Total Tasks, Total Opportunities, Total Defects, and Overall Reliability Score columns with valid data rows.';
+          console.error('No valid data found. Headers found:', headers);
+          console.error('Header map:', headerMap);
+          console.error('Total rows in file:', jsonData.length);
+          console.error('Data rows processed:', jsonData.length - 1);
           return;
         }
 
         this.isUploadingExcel = true;
         this.error = '';
         
+        // First upload the data
         this.reliabilityService.bulkCreateReliabilityData(allData).subscribe({
           next: (response) => {
+            // After data is uploaded successfully, upload the file to S3
+            if (response.status === 'success' || response.status === 'partial') {
+              // Upload file to S3 for storage
+              this.reliabilityDocService.createReliabilityDoc(
+                this.selectedExcelFile!,
+                this.excelUploadForm.processname,
+                this.excelUploadForm.job_id,
+                this.excelUploadForm.year,
+                this.excelUploadForm.month
+              ).subscribe({
+                next: (docResponse) => {
             this.isUploadingExcel = false;
             if (response.status === 'success') {
-              this.successMessage = `Successfully uploaded ${allData.length} records`;
+                    this.successMessage = `Successfully uploaded ${allData.length} records and saved file`;
+                  } else {
+                    const results = (response.results && typeof response.results === 'object' && 'success' in response.results) 
+                      ? response.results as { success: number; failed: number }
+                      : { success: 0, failed: 0 };
+                    this.successMessage = `Upload completed: ${results.success || 0} succeeded, ${results.failed || 0} failed. File saved.`;
+                    if (results.failed > 0) {
+                      this.error = `${results.failed} record(s) failed. Please check the data and try again.`;
+                    }
+                  }
               setTimeout(() => {
                 this.router.navigate(['/reliability']);
-              }, 1500);
-            } else if (response.status === 'partial') {
+                  }, 2000);
+                },
+                error: (docError) => {
+                  // File upload failed, but data was uploaded - log error but don't fail the whole operation
+                  console.error('Error uploading file to S3:', docError);
+                  this.isUploadingExcel = false;
+                  if (response.status === 'success') {
+                    this.successMessage = `Successfully uploaded ${allData.length} records. Warning: File could not be saved.`;
+                  } else {
               const results = (response.results && typeof response.results === 'object' && 'success' in response.results) 
                 ? response.results as { success: number; failed: number }
                 : { success: 0, failed: 0 };
-              this.successMessage = `Upload completed: ${results.success || 0} succeeded, ${results.failed || 0} failed.`;
+                    this.successMessage = `Upload completed: ${results.success || 0} succeeded, ${results.failed || 0} failed. Warning: File could not be saved.`;
               if (results.failed > 0) {
                 this.error = `${results.failed} record(s) failed. Please check the data and try again.`;
+                    }
               }
               setTimeout(() => {
                 this.router.navigate(['/reliability']);
               }, 2000);
+                }
+              });
             } else {
+              this.isUploadingExcel = false;
               this.error = response.message || 'Upload failed';
             }
           },

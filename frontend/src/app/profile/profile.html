@@ -1,0 +1,289 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Profile Details</h1>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoadingProfile" class="aws-card p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      <p class="mt-4 text-gray-600">Loading profile...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage && !isLoadingProfile" class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-sm text-red-700">{{ errorMessage }}</span>
+      </div>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="successMessage" class="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+      <div class="flex">
+        <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-sm text-green-700">{{ successMessage }}</span>
+      </div>
+    </div>
+
+    <!-- Manager Profile -->
+    <div *ngIf="userType === 'manager' && manager && !isLoadingProfile" class="space-y-6">
+      <div class="aws-card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-semibold text-gray-900">Manager Profile</h2>
+          <button
+            *ngIf="!isEditing"
+            (click)="enableEdit()"
+            class="aws-button-primary"
+          >
+            Edit Profile
+          </button>
+        </div>
+
+        <!-- View Mode -->
+        <div *ngIf="!isEditing" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <p class="text-gray-900">{{ manager.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <p class="text-gray-900">{{ manager.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <p class="text-gray-900 capitalize">{{ manager.role || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+              <span [class]="manager.isActive ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'">
+                {{ manager.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email Verified</label>
+              <span [class]="manager.isEmailVerified ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800'">
+                {{ manager.isEmailVerified ? 'Verified' : 'Not Verified' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div *ngIf="isEditing" class="space-y-6">
+          <form (ngSubmit)="updateProfile()" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="manager-name" class="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="manager-name"
+                  [(ngModel)]="managerForm.name"
+                  name="manager-name"
+                  required
+                  class="aws-input"
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <label for="manager-email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="manager-email"
+                  [value]="manager.email"
+                  disabled
+                  class="aws-input bg-gray-100 cursor-not-allowed"
+                />
+                <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+              </div>
+              <div>
+                <label for="manager-role" class="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <select
+                  id="manager-role"
+                  [(ngModel)]="managerForm.role"
+                  name="manager-role"
+                  class="aws-input"
+                >
+                  <option value="manager">Manager</option>
+                  <option value="senior_manager">Senior Manager</option>
+                  <option value="director">Director</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-4 pt-4 border-t">
+              <button
+                type="button"
+                (click)="cancelEdit()"
+                class="aws-button-secondary"
+                [disabled]="isLoading"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="aws-button-primary"
+                [disabled]="isLoading"
+              >
+                <span *ngIf="isLoading">Saving...</span>
+                <span *ngIf="!isLoading">Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Member Profile -->
+    <div *ngIf="userType === 'team-member' && teamMember && !isLoadingProfile" class="space-y-6">
+      <div class="aws-card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-semibold text-gray-900">Team Member Profile</h2>
+          <button
+            *ngIf="!isEditing"
+            (click)="enableEdit()"
+            class="aws-button-primary"
+          >
+            Edit Profile
+          </button>
+        </div>
+
+        <!-- View Mode -->
+        <div *ngIf="!isEditing" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <p class="text-gray-900">{{ teamMember.name || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <p class="text-gray-900">{{ teamMember.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Worker ID</label>
+              <p class="text-gray-900">{{ teamMember.workerId || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">DA ID</label>
+              <p class="text-gray-900">{{ teamMember.da_id || 'N/A' }}</p>
+            </div>
+            <div *ngIf="teamMember.managerId">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Manager</label>
+              <p class="text-gray-900">
+                {{ getManagerName(teamMember.managerId) }}
+                <span *ngIf="getManagerEmail(teamMember.managerId)" class="text-gray-500 text-sm">
+                  ({{ getManagerEmail(teamMember.managerId) }})
+                </span>
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+              <span [class]="teamMember.isActive ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800'">
+                {{ teamMember.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email Verified</label>
+              <span [class]="teamMember.isEmailVerified ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800'">
+                {{ teamMember.isEmailVerified ? 'Verified' : 'Not Verified' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div *ngIf="isEditing" class="space-y-6">
+          <form (ngSubmit)="updateProfile()" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="team-name" class="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="team-name"
+                  [(ngModel)]="teamMemberForm.name"
+                  name="team-name"
+                  required
+                  class="aws-input"
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <label for="team-email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="team-email"
+                  [value]="teamMember.email"
+                  disabled
+                  class="aws-input bg-gray-100 cursor-not-allowed"
+                />
+                <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+              </div>
+              <div>
+                <label for="team-worker-id" class="block text-sm font-medium text-gray-700 mb-2">
+                  Worker ID
+                </label>
+                <input
+                  type="text"
+                  id="team-worker-id"
+                  [value]="teamMember.workerId || 'N/A'"
+                  disabled
+                  class="aws-input bg-gray-100 cursor-not-allowed"
+                />
+                <p class="mt-1 text-sm text-gray-500">Worker ID cannot be changed</p>
+              </div>
+              <div>
+                <label for="team-da-id" class="block text-sm font-medium text-gray-700 mb-2">
+                  DA ID
+                </label>
+                <input
+                  type="text"
+                  id="team-da-id"
+                  [value]="teamMember.da_id || 'N/A'"
+                  disabled
+                  class="aws-input bg-gray-100 cursor-not-allowed"
+                />
+                <p class="mt-1 text-sm text-gray-500">DA ID cannot be changed</p>
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-4 pt-4 border-t">
+              <button
+                type="button"
+                (click)="cancelEdit()"
+                class="aws-button-secondary"
+                [disabled]="isLoading"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="aws-button-primary"
+                [disabled]="isLoading"
+              >
+                <span *ngIf="isLoading">Saving...</span>
+                <span *ngIf="!isLoading">Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

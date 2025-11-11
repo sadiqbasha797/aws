@@ -225,8 +225,172 @@ const getRecentActivities = async (req, res) => {
   }
 };
 
+/**
+ * Get month-wise reliability data for the last 5 months
+ */
+const getReliabilityMonthlyData = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
+
+    // Calculate date ranges for the last 5 months
+    const monthsData = [];
+    for (let i = 4; i >= 0; i--) {
+      let month = currentMonth - i;
+      let year = currentYear;
+      
+      // Handle year rollover
+      if (month <= 0) {
+        month += 12;
+        year -= 1;
+      }
+
+      // Calculate start and end of month
+      const monthStart = new Date(year, month - 1, 1);
+      const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+      // Get reliability data for this month - using createdAt if month/year fields are not available
+      const monthStats = await ReliabilityData.aggregate([
+        {
+          $match: {
+            isActive: true,
+            $or: [
+              { year: year, month: month },
+              {
+                createdAt: {
+                  $gte: monthStart,
+                  $lte: monthEnd
+                }
+              }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgReliabilityScore: { $avg: '$overallReliabilityScore' },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'short' });
+      const avgScore = monthStats.length > 0 ? monthStats[0].avgReliabilityScore : 0;
+      const count = monthStats.length > 0 ? monthStats[0].count : 0;
+
+      monthsData.push({
+        month: monthName,
+        monthNumber: month,
+        year: year,
+        avgReliabilityScore: Math.round(avgScore * 100) / 100,
+        recordCount: count
+      });
+    }
+
+    res.status(200).json({
+      message: 'Monthly reliability data retrieved successfully',
+      data: monthsData
+    });
+  } catch (error) {
+    console.error('Monthly reliability data error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve monthly reliability data',
+      details: error.message
+    });
+  }
+};
+
+/**
+ * Get week-wise productivity data for the last 5 weeks
+ */
+const getProductivityWeeklyData = async (req, res) => {
+  try {
+    const now = new Date();
+    
+    // Helper function to get week number from date (ISO week)
+    const getWeekNumber = (date) => {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    };
+
+    // Helper function to get start and end of week (Monday to Sunday)
+    const getWeekRange = (date, weekOffset = 0) => {
+      const d = new Date(date);
+      d.setDate(d.getDate() - (weekOffset * 7));
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const weekStart = new Date(d.getFullYear(), d.getMonth(), diff);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      const weekNum = getWeekNumber(weekStart);
+      return { weekStart, weekEnd, weekNumber: weekNum, year: weekStart.getFullYear() };
+    };
+
+    // Calculate the last 5 weeks
+    const weeksData = [];
+    for (let i = 4; i >= 0; i--) {
+      const { weekStart, weekEnd, weekNumber, year } = getWeekRange(now, i);
+
+      // Get productivity data for this week - using createdAt if weekNumber/year fields are not available
+      const weekStats = await ProductivityData.aggregate([
+        {
+          $match: {
+            isActive: true,
+            $or: [
+              { year: year, weekNumber: weekNumber },
+              {
+                createdAt: {
+                  $gte: weekStart,
+                  $lte: weekEnd
+                }
+              }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgProductivity: { $avg: '$productivityPercentage' },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const avgProductivity = weekStats.length > 0 ? weekStats[0].avgProductivity : 0;
+      const count = weekStats.length > 0 ? weekStats[0].count : 0;
+
+      weeksData.push({
+        week: `Week ${weekNumber}`,
+        weekNumber: weekNumber,
+        year: year,
+        avgProductivity: Math.round(avgProductivity * 100) / 100,
+        recordCount: count
+      });
+    }
+
+    res.status(200).json({
+      message: 'Weekly productivity data retrieved successfully',
+      data: weeksData
+    });
+  } catch (error) {
+    console.error('Weekly productivity data error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve weekly productivity data',
+      details: error.message
+    });
+  }
+};
+
 module.exports = {
   getDashboardStats,
-  getRecentActivities
+  getRecentActivities,
+  getReliabilityMonthlyData,
+  getProductivityWeeklyData
 };
 

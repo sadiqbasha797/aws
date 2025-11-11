@@ -103,7 +103,6 @@
           class="btn btn-primary"
           [disabled]="loading || (!isEditMode && !auditDocForm.file) || !auditDocForm.date">
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-          <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Audit Document' : 'Create Audit Document') }}
         </button>
         
@@ -113,7 +112,6 @@
           (click)="cancel()"
           [disabled]="loading">
           <i class="fas fa-times"></i>
-          Cancel
         </button>
       </div>
     </form>

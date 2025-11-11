@@ -1,6 +1,27 @@
 const Manager = require('../models/Manager');
 const TeamMember = require('../models/TeamMember');
 
+// Get active managers for public signup (returns only id, name, email)
+const getActiveManagersForSignup = async (req, res) => {
+  try {
+    const managers = await Manager.find({ isActive: true })
+      .select('_id name email department')
+      .sort({ name: 1 });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        managers
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong!'
+    });
+  }
+};
+
 // Get all managers
 const getAllManagers = async (req, res) => {
   try {
@@ -486,6 +507,7 @@ const getManagerSpecificStats = async (req, res) => {
 };
 
 module.exports = {
+  getActiveManagersForSignup,
   getAllManagers,
   getManager,
   getMe,

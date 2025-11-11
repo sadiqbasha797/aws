@@ -1,0 +1,351 @@
+<div class="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full">
+    <!-- AWS Logo and Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-orange-500 rounded-full mb-4">
+        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">AWS Dashboard</h1>
+      <p class="text-gray-600">Create your account</p>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="aws-card p-8">
+      <!-- User Type Selection - Hidden, defaulting to team-member -->
+      <div class="mb-6" style="display: none;">
+        <div class="flex space-x-4 border-b border-gray-200">
+          <button
+            type="button"
+            (click)="setUserType('manager')"
+            class="flex-1 py-3 px-4 text-center font-medium transition-colors"
+            [class.text-orange-600]="userType === 'manager'"
+            [class.border-b-2]="userType === 'manager'"
+            [class.border-orange-600]="userType === 'manager'"
+            [class.text-gray-500]="userType !== 'manager'"
+            [class.hover:text-gray-700]="userType !== 'manager'"
+          >
+            Manager
+          </button>
+          <button
+            type="button"
+            (click)="setUserType('team-member')"
+            class="flex-1 py-3 px-4 text-center font-medium transition-colors"
+            [class.text-orange-600]="userType === 'team-member'"
+            [class.border-b-2]="userType === 'team-member'"
+            [class.border-orange-600]="userType === 'team-member'"
+            [class.text-gray-500]="userType !== 'team-member'"
+            [class.hover:text-gray-700]="userType !== 'team-member'"
+          >
+            Team Member
+          </button>
+        </div>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" #signupForm="ngForm" class="space-y-6">
+        <!-- Manager Form - Hidden -->
+        <div *ngIf="false" class="space-y-6" style="display: none;">
+          <!-- Name Field -->
+          <div>
+            <label for="manager-name" class="block text-sm font-medium text-gray-700 mb-2">
+              Full Name <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="manager-name" 
+              name="manager-name"
+              [(ngModel)]="managerForm.name"
+              required
+              minlength="2"
+              #managerName="ngModel"
+              class="aws-input"
+              [class.border-red-500]="managerName.invalid && managerName.touched"
+              placeholder="Enter your full name"
+            />
+            <div *ngIf="managerName.invalid && managerName.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="managerName.errors?.['required']">Name is required</span>
+              <span *ngIf="managerName.errors?.['minlength']">Name must be at least 2 characters</span>
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <div>
+            <label for="manager-email" class="block text-sm font-medium text-gray-700 mb-2">
+              Email Address <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="manager-email" 
+              name="manager-email"
+              [(ngModel)]="managerForm.email"
+              required
+              email
+              #managerEmail="ngModel"
+              class="aws-input"
+              [class.border-red-500]="managerEmail.invalid && managerEmail.touched"
+              placeholder="Enter your email"
+            />
+            <div *ngIf="managerEmail.invalid && managerEmail.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="managerEmail.errors?.['required']">Email is required</span>
+              <span *ngIf="managerEmail.errors?.['email']">Please enter a valid email</span>
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <label for="manager-password" class="block text-sm font-medium text-gray-700 mb-2">
+              Password <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="password" 
+              id="manager-password" 
+              name="manager-password"
+              [(ngModel)]="managerForm.password"
+              required
+              minlength="6"
+              #managerPassword="ngModel"
+              class="aws-input"
+              [class.border-red-500]="managerPassword.invalid && managerPassword.touched"
+              placeholder="Enter your password"
+            />
+            <div *ngIf="managerPassword.invalid && managerPassword.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="managerPassword.errors?.['required']">Password is required</span>
+              <span *ngIf="managerPassword.errors?.['minlength']">Password must be at least 6 characters</span>
+            </div>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <div>
+            <label for="manager-confirm-password" class="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="password" 
+              id="manager-confirm-password" 
+              name="manager-confirm-password"
+              [(ngModel)]="managerConfirmPassword"
+              required
+              #managerConfirmPasswordInput="ngModel"
+              class="aws-input"
+              [class.border-red-500]="managerConfirmPasswordInput.invalid && managerConfirmPasswordInput.touched"
+              placeholder="Confirm your password"
+            />
+            <div *ngIf="managerConfirmPasswordInput.invalid && managerConfirmPasswordInput.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="managerConfirmPasswordInput.errors?.['required']">Please confirm your password</span>
+            </div>
+          </div>
+
+          <!-- Role Field -->
+          <div>
+            <label for="manager-role" class="block text-sm font-medium text-gray-700 mb-2">
+              Role
+            </label>
+            <select 
+              id="manager-role" 
+              name="manager-role"
+              [(ngModel)]="managerForm.role"
+              class="aws-input"
+            >
+              <option value="manager">Manager</option>
+              <option value="senior_manager">Senior Manager</option>
+              <option value="director">Director</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Team Member Form -->
+        <div *ngIf="userType === 'team-member'" class="space-y-6">
+          <!-- Name Field -->
+          <div>
+            <label for="team-name" class="block text-sm font-medium text-gray-700 mb-2">
+              Full Name <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="team-name" 
+              name="team-name"
+              [(ngModel)]="teamMemberForm.name"
+              required
+              minlength="2"
+              #teamName="ngModel"
+              class="aws-input"
+              [class.border-red-500]="teamName.invalid && teamName.touched"
+              placeholder="Enter your full name"
+            />
+            <div *ngIf="teamName.invalid && teamName.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="teamName.errors?.['required']">Name is required</span>
+              <span *ngIf="teamName.errors?.['minlength']">Name must be at least 2 characters</span>
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <div>
+            <label for="team-email" class="block text-sm font-medium text-gray-700 mb-2">
+              Email Address <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="team-email" 
+              name="team-email"
+              [(ngModel)]="teamMemberForm.email"
+              required
+              email
+              #teamEmail="ngModel"
+              class="aws-input"
+              [class.border-red-500]="teamEmail.invalid && teamEmail.touched"
+              placeholder="Enter your email"
+            />
+            <div *ngIf="teamEmail.invalid && teamEmail.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="teamEmail.errors?.['required']">Email is required</span>
+              <span *ngIf="teamEmail.errors?.['email']">Please enter a valid email</span>
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <label for="team-password" class="block text-sm font-medium text-gray-700 mb-2">
+              Password <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="password" 
+              id="team-password" 
+              name="team-password"
+              [(ngModel)]="teamMemberForm.password"
+              required
+              minlength="6"
+              #teamPassword="ngModel"
+              class="aws-input"
+              [class.border-red-500]="teamPassword.invalid && teamPassword.touched"
+              placeholder="Enter your password"
+            />
+            <div *ngIf="teamPassword.invalid && teamPassword.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="teamPassword.errors?.['required']">Password is required</span>
+              <span *ngIf="teamPassword.errors?.['minlength']">Password must be at least 6 characters</span>
+            </div>
+          </div>
+
+          <!-- Confirm Password Field -->
+          <div>
+            <label for="team-confirm-password" class="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="password" 
+              id="team-confirm-password" 
+              name="team-confirm-password"
+              [(ngModel)]="teamMemberConfirmPassword"
+              required
+              #teamConfirmPasswordInput="ngModel"
+              class="aws-input"
+              [class.border-red-500]="teamConfirmPasswordInput.invalid && teamConfirmPasswordInput.touched"
+              placeholder="Confirm your password"
+            />
+            <div *ngIf="teamConfirmPasswordInput.invalid && teamConfirmPasswordInput.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="teamConfirmPasswordInput.errors?.['required']">Please confirm your password</span>
+            </div>
+          </div>
+
+          <!-- Manager Selection -->
+          <div>
+            <label for="team-manager" class="block text-sm font-medium text-gray-700 mb-2">
+              Manager <span class="text-red-500">*</span>
+            </label>
+            <select 
+              id="team-manager" 
+              name="team-manager"
+              [(ngModel)]="teamMemberForm.managerId"
+              required
+              #teamManager="ngModel"
+              class="aws-input"
+              [class.border-red-500]="teamManager.invalid && teamManager.touched"
+            >
+              <option value="">Select a manager</option>
+              <option *ngFor="let manager of managers" [value]="manager._id || manager.id">
+                {{ manager.name }} ({{ manager.email }}){{ manager.department ? ' - ' + manager.department : '' }}
+              </option>
+            </select>
+            <div *ngIf="teamManager.invalid && teamManager.touched" class="mt-1 text-sm text-red-600">
+              <span *ngIf="teamManager.errors?.['required']">Please select a manager</span>
+            </div>
+            <div *ngIf="isLoadingManagers" class="mt-1 text-sm text-gray-500">
+              Loading managers...
+            </div>
+          </div>
+
+          <!-- Worker ID Field (Optional) -->
+          <div>
+            <label for="team-worker-id" class="block text-sm font-medium text-gray-700 mb-2">
+              Worker ID
+            </label>
+            <input 
+              type="text" 
+              id="team-worker-id" 
+              name="team-worker-id"
+              [(ngModel)]="teamMemberForm.workerId"
+              class="aws-input"
+              placeholder="Enter worker ID (optional)"
+            />
+          </div>
+
+          <!-- DA ID Field (Optional) -->
+          <div>
+            <label for="team-da-id" class="block text-sm font-medium text-gray-700 mb-2">
+              DA ID
+            </label>
+            <input 
+              type="text" 
+              id="team-da-id" 
+              name="team-da-id"
+              [(ngModel)]="teamMemberForm.da_id"
+              class="aws-input"
+              placeholder="Enter DA ID (optional)"
+            />
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 rounded-md p-3">
+          <div class="flex">
+            <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-sm text-red-700">{{ errorMessage }}</span>
+          </div>
+        </div>
+
+        <!-- Success Message -->
+        <div *ngIf="successMessage" class="bg-green-50 border border-green-200 rounded-md p-3">
+          <div class="flex">
+            <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-sm text-green-700">{{ successMessage }}</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          class="w-full aws-button-primary flex items-center justify-center"
+          [disabled]="signupForm.invalid || isLoading"
+        >
+          <svg *ngIf="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+        </button>
+      </form>
+
+      <!-- Footer -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600">
+          Already have an account? 
+          <a routerLink="/login" class="font-medium text-orange-600 hover:text-orange-500">Sign in here</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+

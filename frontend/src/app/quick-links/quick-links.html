@@ -1,102 +1,40 @@
-<div class="min-h-screen bg-gray-50 p-6">
+<div class="min-h-screen bg-gray-50 p-4">
   <!-- Header -->
-  <div class="mb-8">
+  <div class="mb-4">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div class="flex items-center space-x-3">
-        <div class="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-lg">
-          <i class="fas fa-link text-white text-xl"></i>
+        <div class="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-lg">
+          <i class="fas fa-link text-white text-lg"></i>
         </div>
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Quick Links</h1>
-          <p class="text-gray-600 mt-1">Manage and access your quick links</p>
+          <h1 class="text-2xl font-bold text-gray-900">Quick Links</h1>
+          <p class="text-gray-600 mt-0.5 text-sm">Manage and access your quick links</p>
         </div>
       </div>
-      <div class="flex items-center space-x-4">
-        <!-- User Role Badge -->
-        <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-          <i class="fas fa-user-tag mr-1"></i>
-          {{ userRole || 'Not set' }}
-        </div>
+      <div class="flex items-center space-x-3">
         <!-- Create Quick Link Button -->
         <button 
-          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
           (click)="createQuickLink()">
-          <i class="fas fa-plus"></i>
+          <i class="fas fa-plus text-xs"></i>
           <span>Create Quick Link</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Search and Filters -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-    <!-- Search Bar -->
-    <div class="p-6 pb-4">
-      <div class="flex items-center justify-between mb-4">
-        <div class="relative flex-1 max-w-md">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-search text-gray-400"></i>
-          </div>
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (keyup.enter)="onSearch()"
-            placeholder="Search quick links by title or URL..."
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-          <button 
-            (click)="onSearch()"
-            class="absolute inset-y-0 right-0 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-r-lg transition-colors duration-200">
-            Search
-          </button>
-        </div>
-        
-        <!-- Filter Toggle Button -->
-        <button 
-          (click)="toggleFilters()"
-          class="ml-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-filter"></i>
-          <span>Filters</span>
-          <i class="fas fa-chevron-down transition-transform duration-200" 
-             [class.rotate-180]="showFilters"></i>
-        </button>
+  <!-- Search Bar -->
+  <div class="mb-4">
+    <div class="relative max-w-md">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <i class="fas fa-search text-gray-400 text-sm"></i>
       </div>
-    </div>
-
-    <!-- Filter Controls - Toggleable -->
-    <div *ngIf="showFilters" class="px-6 pb-6 border-t border-gray-100 pt-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="flex items-center space-x-2">
-          <label for="sortBy" class="text-sm font-medium text-gray-700">Sort by:</label>
-          <select 
-            id="sortBy"
-            [(ngModel)]="sortBy" 
-            (change)="onSortChange()"
-            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="createdAt">Created Date</option>
-            <option value="updatedAt">Updated Date</option>
-            <option value="title">Title</option>
-          </select>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <label for="sortOrder" class="text-sm font-medium text-gray-700">Order:</label>
-          <select 
-            id="sortOrder"
-            [(ngModel)]="sortOrder" 
-            (change)="onSortChange()"
-            class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="desc">Descending</option>
-            <option value="asc">Ascending</option>
-          </select>
-        </div>
-
-        <button 
-          (click)="clearFilters()"
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-1">
-          <i class="fas fa-times"></i>
-          <span>Clear Filters</span>
-        </button>
-      </div>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (keyup.enter)="onSearch()"
+        placeholder="Search quick links..."
+        class="block w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
     </div>
   </div>
 
@@ -124,65 +62,42 @@
   </div>
 
   <!-- Quick Links Grid -->
-  <div *ngIf="!loading && !error && quickLinks.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+  <div *ngIf="!loading && !error && quickLinks.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 mb-8">
     <div 
       *ngFor="let quickLink of quickLinks" 
-      class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-200 transition-all duration-200 group">
+      class="bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 group flex flex-col">
       
-      <!-- Card Header -->
-      <div class="p-6 pb-4">
-        <div class="flex items-start justify-between mb-3">
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2 flex-1">
+      <!-- Card Content -->
+      <div class="p-3 flex-1 flex flex-col">
+        <!-- Title -->
+        <div class="mb-2 flex-1">
+          <h3 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2">
             {{ quickLink.title }}
           </h3>
-        </div>
-
-        <!-- Link Preview -->
-        <div class="mb-4">
-          <a 
-            [href]="quickLink.link" 
-            target="_blank"
-            (click)="openLink(quickLink.link); $event.stopPropagation()"
-            class="text-sm text-blue-600 hover:text-blue-700 hover:underline truncate block">
-            <i class="fas fa-external-link-alt mr-1"></i>
-            {{ quickLink.link }}
-          </a>
-        </div>
-
-        <!-- Meta Information -->
-        <div class="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-4">
-          <div class="flex items-center space-x-1">
-            <i class="fas fa-user w-3"></i>
-            <span class="truncate">{{ quickLink.createdBy.name || 'Unknown' }}</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <i class="fas fa-calendar w-3"></i>
-            <span>{{ formatDate(quickLink.createdAt) }}</span>
-          </div>
         </div>
       </div>
 
       <!-- Card Footer -->
-      <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex items-center justify-between">
+      <div class="px-3 py-2 bg-gray-50 rounded-b-lg border-t border-gray-100 flex items-center justify-between">
         <button 
           (click)="openLink(quickLink.link)"
-          class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 group-hover:text-blue-700">
-          <i class="fas fa-external-link-alt"></i>
-          <span>Open Link</span>
+          class="text-blue-600 hover:text-blue-700 font-medium text-xs flex items-center space-x-1">
+          <i class="fas fa-external-link-alt text-xs"></i>
+          <span>Open</span>
         </button>
         
-        <div class="flex items-center space-x-2" *ngIf="canEditQuickLink(quickLink)">
+        <div class="flex items-center space-x-1" *ngIf="canEditQuickLink(quickLink)">
           <button 
             (click)="editQuickLink(quickLink); $event.stopPropagation()"
-            class="text-gray-600 hover:text-blue-600 p-2 rounded transition-colors duration-200"
+            class="text-gray-500 hover:text-blue-600 p-1 rounded transition-colors duration-200"
             title="Edit">
-            <i class="fas fa-edit"></i>
+            <i class="fas fa-edit text-xs"></i>
           </button>
           <button 
             (click)="deleteQuickLink(quickLink); $event.stopPropagation()"
-            class="text-gray-600 hover:text-red-600 p-2 rounded transition-colors duration-200"
+            class="text-gray-500 hover:text-red-600 p-1 rounded transition-colors duration-200"
             title="Delete">
-            <i class="fas fa-trash"></i>
+            <i class="fas fa-trash text-xs"></i>
           </button>
         </div>
       </div>

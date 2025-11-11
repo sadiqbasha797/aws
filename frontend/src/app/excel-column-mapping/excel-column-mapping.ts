@@ -6,6 +6,7 @@ import { ExcelUploadService, ExcelUploadData } from '../services/excel-upload.se
 import { ReliabilityService } from '../services/reliability.service';
 import { ProductivityService } from '../services/productivity.service';
 import { AuthService } from '../services/auth.service';
+import { ReliabilityDocService } from '../services/reliability-doc.service';
 import * as XLSX from 'xlsx';
 
 interface ColumnMapping {
@@ -36,7 +37,8 @@ export class ExcelColumnMappingComponent implements OnInit {
     private reliabilityService: ReliabilityService,
     private productivityService: ProductivityService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private reliabilityDocService: ReliabilityDocService
   ) {}
 
   ngOnInit(): void {
@@ -490,14 +492,62 @@ export class ExcelColumnMappingComponent implements OnInit {
       if (this.uploadData.uploadType === 'reliability') {
         this.reliabilityService.bulkCreateReliabilityData(allData).subscribe({
           next: (response) => {
+            // After data is uploaded successfully, upload the file to S3
+            if (response.status === 'success' || response.status === 'partial') {
+              // Upload file to S3 for storage
+              if (this.uploadData?.file) {
+                this.reliabilityDocService.createReliabilityDoc(
+                  this.uploadData.file,
+                  this.uploadData.metadata.processname,
+                  this.uploadData.metadata.job_id,
+                  this.uploadData.metadata.year,
+                  this.uploadData.metadata.month
+                ).subscribe({
+                  next: (docResponse) => {
+                    this.isUploading = false;
+                    if (response.status === 'success') {
+                      this.successMessage = `Successfully uploaded ${allData.length} records and saved file`;
+                    } else {
+                      const results = (response.results && typeof response.results === 'object' && 'success' in response.results) 
+                        ? response.results as { success: number; failed: number }
+                        : { success: 0, failed: 0 };
+                      this.successMessage = `Upload completed: ${results.success || 0} succeeded, ${results.failed || 0} failed. File saved.`;
+                      if (results.failed > 0) {
+                        this.error = `${results.failed} record(s) failed. Please check the data and try again.`;
+                      }
+                    }
+                    this.excelUploadService.clearUploadData();
+                    setTimeout(() => {
+                      this.router.navigate(['/reliability']);
+                    }, 2000);
+                  },
+                  error: (docError) => {
+                    // File upload failed, but data was uploaded - log error but don't fail the whole operation
+                    console.error('Error uploading file to S3:', docError);
             this.isUploading = false;
             if (response.status === 'success') {
-              this.successMessage = `Successfully uploaded ${allData.length} records`;
+                      this.successMessage = `Successfully uploaded ${allData.length} records. Warning: File could not be saved.`;
+                    } else {
+                      const results = (response.results && typeof response.results === 'object' && 'success' in response.results) 
+                        ? response.results as { success: number; failed: number }
+                        : { success: 0, failed: 0 };
+                      this.successMessage = `Upload completed: ${results.success || 0} succeeded, ${results.failed || 0} failed. Warning: File could not be saved.`;
+                      if (results.failed > 0) {
+                        this.error = `${results.failed} record(s) failed. Please check the data and try again.`;
+                      }
+                    }
               this.excelUploadService.clearUploadData();
               setTimeout(() => {
                 this.router.navigate(['/reliability']);
-              }, 1500);
-            } else if (response.status === 'partial') {
+                    }, 2000);
+                  }
+                });
+              } else {
+                // No file to upload, just proceed
+                this.isUploading = false;
+                if (response.status === 'success') {
+                  this.successMessage = `Successfully uploaded ${allData.length} records`;
+                } else {
               const results = (response.results && typeof response.results === 'object' && 'success' in response.results) 
                 ? response.results as { success: number; failed: number }
                 : { success: 0, failed: 0 };
@@ -505,10 +555,14 @@ export class ExcelColumnMappingComponent implements OnInit {
               if (results.failed > 0) {
                 this.error = `${results.failed} record(s) failed. Please check the data and try again.`;
               }
+                }
+                this.excelUploadService.clearUploadData();
               setTimeout(() => {
                 this.router.navigate(['/reliability']);
-              }, 2000);
+                }, response.status === 'success' ? 1500 : 2000);
+              }
             } else {
+              this.isUploading = false;
               // Show detailed error messages from failed records
               const results = response.results;
               if (results && typeof results === 'object' && 'failedRecords' in results && results.failedRecords && results.failedRecords.length > 0) {

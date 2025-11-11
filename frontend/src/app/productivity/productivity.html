@@ -58,8 +58,8 @@
         </h3>
       </div>
       <div class="flex items-center gap-2">
-        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-list"></i>
+        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors duration-200 flex items-center space-x-1">
+          <i class="fas fa-list text-xs"></i>
           <span>Show All</span>
         </button>
         <button (click)="changeYear('prev')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm transition-colors">
@@ -72,67 +72,129 @@
       </div>
     </div>
     <div class="p-6">
-      <!-- Week Selector (Default View) -->
-      <div *ngIf="!showWeekGrid" class="flex flex-col items-center space-y-4">
+      <!-- Week Selection Mode Toggle -->
+      <div class="flex justify-center mb-4">
+        <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+          <button 
+            (click)="isWeekRangeMode = false; fromWeek = null; toWeek = null; weekRangeError = '';"
+            [class.bg-orange-500]="!isWeekRangeMode"
+            [class.text-white]="!isWeekRangeMode"
+            [class.text-gray-700]="isWeekRangeMode"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-colors duration-200">
+            Single Week
+          </button>
+          <button 
+            (click)="isWeekRangeMode = true; weekInputValue = null; weekInputError = ''; selectedWeek = null;"
+            [class.bg-orange-500]="isWeekRangeMode"
+            [class.text-white]="isWeekRangeMode"
+            [class.text-gray-700]="!isWeekRangeMode"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-colors duration-200">
+            Week Range
+          </button>
+        </div>
+      </div>
+
+      <!-- Single Week Selector -->
+      <div *ngIf="!isWeekRangeMode" class="flex flex-col items-center space-y-4">
         <div class="w-full max-w-md">
-          <label for="week-selector" class="block text-sm font-medium text-gray-700 mb-2">
-            Select a Week
+          <label for="week-input" class="block text-sm font-medium text-gray-700 mb-2">
+            Enter Week Number
           </label>
-          <div class="flex items-center gap-3">
-            <select 
-              id="week-selector"
-              [(ngModel)]="selectedWeek" 
-              (change)="selectWeekFromDropdown()"
-              class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-              <option [ngValue]="null">Select a week...</option>
-              <option *ngFor="let week of weekOptions" [ngValue]="week">
-                Week {{ week }}
-              </option>
-            </select>
-            <button 
-              (click)="toggleWeekGrid()" 
-              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-              <i class="fas fa-th"></i>
-              <span>Show All Weeks</span>
-            </button>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-3">
+              <input 
+                type="number"
+                id="week-input"
+                [(ngModel)]="weekInputValue" 
+                (blur)="validateAndSelectWeek()"
+                (keyup.enter)="validateAndSelectWeek()"
+                [min]="1"
+                [max]="getMaxWeekForYear()"
+                placeholder="Enter week (1-{{ getMaxWeekForYear() }})"
+                class="flex-1 border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                [class.border-gray-300]="!weekInputError"
+                [class.border-red-500]="weekInputError"
+                [class.bg-red-50]="weekInputError">
+              <button 
+                (click)="validateAndSelectWeek()" 
+                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+                <i class="fas fa-search"></i>
+                <span>Go</span>
+              </button>
+            </div>
+            <div *ngIf="weekInputError" class="text-sm text-red-600 flex items-center space-x-1">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>{{ weekInputError }}</span>
+            </div>
+            <p class="text-xs text-gray-500">
+              Valid range: Week 1 to Week {{ getMaxWeekForYear() }} for {{ selectedYear }}
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- Week Grid (Optional View) -->
-      <div *ngIf="showWeekGrid">
-        <div class="mb-4 flex justify-end">
-          <button 
-            (click)="toggleWeekGrid()" 
-            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-            <i class="fas fa-times"></i>
-            <span>Hide Grid</span>
-          </button>
-        </div>
-      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-        <button 
-          *ngFor="let week of weeksInSelectedYear" 
-          (click)="selectWeek(week)"
-          class="group relative bg-white border-2 border-gray-200 rounded-xl p-4 text-center transition-all duration-300 hover:border-orange-400 hover:shadow-lg hover:scale-105 hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 cursor-pointer overflow-hidden">
-          <!-- Background decoration -->
-          <div class="absolute top-0 right-0 w-16 h-16 bg-orange-100 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
-          <!-- Week number badge -->
-          <div class="relative z-10">
-            <div class="inline-flex items-center justify-center w-12 h-12 mb-2 rounded-full bg-gray-900 text-white font-bold text-lg shadow-md group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-orange-600 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-              {{ week }}
+      <!-- Week Range Selector -->
+      <div *ngIf="isWeekRangeMode" class="flex flex-col items-center space-y-4">
+        <div class="w-full max-w-md">
+          <label class="block text-sm font-medium text-gray-700 mb-4 text-center">
+            Select Week Range
+          </label>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <label for="from-week" class="block text-xs font-medium text-gray-600 mb-1">
+                  From Week
+                </label>
+                <input 
+                  type="number"
+                  id="from-week"
+                  [(ngModel)]="fromWeek" 
+                  (keyup.enter)="validateAndSelectWeekRange()"
+                  [min]="1"
+                  [max]="getMaxWeekForYear()"
+                  placeholder="Week number"
+                  class="w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  [class.border-gray-300]="!weekRangeError"
+                  [class.border-red-500]="weekRangeError"
+                  [class.bg-red-50]="weekRangeError">
+              </div>
+              <div class="flex items-center pt-6">
+                <span class="text-gray-500 font-medium">to</span>
+              </div>
+              <div class="flex-1">
+                <label for="to-week" class="block text-xs font-medium text-gray-600 mb-1">
+                  To Week
+                </label>
+                <input 
+                  type="number"
+                  id="to-week"
+                  [(ngModel)]="toWeek" 
+                  (keyup.enter)="validateAndSelectWeekRange()"
+                  [min]="1"
+                  [max]="getMaxWeekForYear()"
+                  placeholder="Week number"
+                  class="w-full border rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  [class.border-gray-300]="!weekRangeError"
+                  [class.border-red-500]="weekRangeError"
+                  [class.bg-red-50]="weekRangeError">
+              </div>
+              <div class="flex items-end pt-6">
+                <button 
+                  (click)="validateAndSelectWeekRange()" 
+                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
+                  <i class="fas fa-search"></i>
+                  <span>Go</span>
+                </button>
+              </div>
             </div>
-            <div class="text-xs font-semibold text-gray-600 uppercase tracking-wider group-hover:text-orange-600 transition-colors duration-300">
-              Week
+            <div *ngIf="weekRangeError" class="text-sm text-red-600 flex items-center space-x-1">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>{{ weekRangeError }}</span>
             </div>
+            <p class="text-xs text-gray-500 text-center">
+              Valid range: Week 1 to Week {{ getMaxWeekForYear() }} for {{ selectedYear }}
+            </p>
           </div>
-          
-          <!-- Hover indicator -->
-          <div class="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-        </button>
-      </div>
-      <div *ngIf="weeksInSelectedYear.length === 0" class="text-center py-8 text-gray-500">
-        No weeks available for this year
         </div>
       </div>
     </div>
@@ -147,12 +209,13 @@
         </button>
         <h3 class="text-lg font-semibold text-gray-900">
           <i class="fas fa-table text-orange-500 mr-2"></i>
-          Productivity Records - Week {{ selectedWeek }} ({{ selectedYear }})
+          <span *ngIf="!isWeekRangeMode">Productivity Records - Week {{ selectedWeek }} ({{ selectedYear }})</span>
+          <span *ngIf="isWeekRangeMode">Productivity Records - Weeks {{ fromWeek }} to {{ toWeek }} ({{ selectedYear }})</span>
         </h3>
       </div>
       <div class="flex items-center gap-2">
-        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
-          <i class="fas fa-list"></i>
+        <button (click)="showAllData()" class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded-lg text-xs font-medium transition-colors duration-200 flex items-center space-x-1">
+          <i class="fas fa-list text-xs"></i>
           <span>Show All</span>
         </button>
       </div>
@@ -338,8 +401,87 @@
       </table>
     </div>
     <div *ngIf="calendarView === 'week' && productivityData.length === 0 && !isLoading" class="text-center py-12">
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No productivity data found for Week {{ selectedWeek }}</h3>
-      <p class="text-gray-600">No records available for this week.</p>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+        <span *ngIf="!isWeekRangeMode">No productivity data found for Week {{ selectedWeek }}</span>
+        <span *ngIf="isWeekRangeMode">No productivity data found for Weeks {{ fromWeek }} to {{ toWeek }}</span>
+      </h3>
+      <p class="text-gray-600">
+        <span *ngIf="!isWeekRangeMode">No records available for this week.</span>
+        <span *ngIf="isWeekRangeMode">No records available for this week range.</span>
+      </p>
+    </div>
+    
+    <!-- Calculation Results Display for Week View -->
+    <div *ngIf="calculationResults && !calculationResults.error && calendarView === 'week'" 
+         class="px-6 pb-6">
+      <div class="mt-4 bg-gradient-to-r from-orange-50 to-blue-50 border border-orange-200 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+          <i class="fas fa-chart-pie text-orange-500"></i>
+          <span>{{ calculationResults.type }} Results</span>
+        </h4>
+        <button 
+          (click)="closeCalculationResults()"
+          class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div *ngIf="calculationResults.productivityPercentage !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">{{ calculationResults.type === 'Sum' ? 'Total Productivity' : (calculationResults.type === 'Average' ? 'Avg Productivity' : 'Productivity') }} %</div>
+          <div class="text-xl font-bold" [class]="getGradeColor(calculationResults.productivityPercentage)">
+            {{ calculationResults.productivityPercentage | number:'1.2-2' }}%
+          </div>
+        </div>
+        <div *ngIf="calculationResults.totalProductivity !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Total Productivity</div>
+          <div class="text-xl font-bold text-gray-900">
+            {{ calculationResults.totalProductivity | number:'1.2-2' }}%
+          </div>
+        </div>
+        <div *ngIf="calculationResults.recordCount !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Total Records</div>
+          <div class="text-xl font-bold text-gray-900">
+            {{ calculationResults.recordCount }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.uniqueAssociates !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Unique Associates</div>
+          <div class="text-xl font-bold text-purple-600">
+            {{ calculationResults.uniqueAssociates }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.uniqueWeeks !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Unique Weeks</div>
+          <div class="text-xl font-bold text-blue-600">
+            {{ calculationResults.uniqueWeeks }}
+          </div>
+        </div>
+        <div *ngIf="calculationResults.uniqueMonths !== undefined" class="bg-white rounded-lg p-3 border border-gray-200">
+          <div class="text-xs text-gray-600 mb-1">Unique Months</div>
+          <div class="text-xl font-bold text-indigo-600">
+            {{ calculationResults.uniqueMonths }}
+          </div>
+        </div>
+      </div>
+      <div *ngIf="calculationResults.record" class="mt-3 pt-3 border-t border-gray-200">
+        <div class="text-sm text-gray-600">
+          <span class="font-medium">Best/Worst Record:</span> 
+          <span *ngIf="calculationResults.record.associateName">{{ calculationResults.record.associateName }} - </span>
+          <span>Productivity: {{ calculationResults.record.productivityPercentage | number:'1.2-2' }}%</span>
+          <span *ngIf="calculationResults.record.month && calculationResults.record.week"> - {{ calculationResults.record.month }} {{ calculationResults.record.week }}</span>
+        </div>
+      </div>
+      </div>
+    </div>
+    <div *ngIf="calculationResults && calculationResults.error && calendarView === 'week'" 
+         class="px-6 pb-6">
+      <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-center space-x-2 text-red-700">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>{{ calculationResults.error }}</span>
+        </div>
+      </div>
     </div>
   </div>
 

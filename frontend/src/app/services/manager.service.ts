@@ -5,11 +5,15 @@ import { AuthService } from './auth.service';
 import { environment } from './environment';
 
 export interface Manager {
+  _id?: string;
   id?: string;
   name: string;
   email: string;
+  department?: string;
   role: string;
   isActive: boolean;
+  isEmailVerified?: boolean;
+  lastLogin?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -21,9 +25,14 @@ export interface ManagerStats {
 }
 
 export interface ManagerResponse {
-  success: boolean;
-  message: string;
-  data?: Manager | Manager[];
+  success?: boolean;
+  status?: string;
+  message?: string;
+  data?: Manager | Manager[] | {
+    manager?: Manager;
+    managers?: Manager[];
+    stats?: ManagerStats;
+  };
   stats?: ManagerStats;
 }
 
@@ -101,5 +110,10 @@ export class ManagerService {
   // Team member management
   getManagerTeamMembers(managerId: string): Observable<ManagerResponse> {
     return this.http.get<ManagerResponse>(`${this.baseUrl}/${managerId}/team-members`);
+  }
+
+  // Public endpoint to get active managers for signup
+  getActiveManagersForSignup(): Observable<ManagerResponse> {
+    return this.http.get<ManagerResponse>(`${this.baseUrl}/public/active`);
   }
 }

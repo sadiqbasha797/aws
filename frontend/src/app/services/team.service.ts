@@ -10,7 +10,8 @@ export interface TeamMember {
   role: string;
   department?: string;
   position?: string;
-  phone?: string;
+  da_id?: string;
+  workerId?: string;
   joinDate?: string;
   isActive: boolean;
   createdAt: string;

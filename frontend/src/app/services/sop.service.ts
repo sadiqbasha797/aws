@@ -78,6 +78,7 @@ export interface SOPCreateRequest {
   title: string;
   process: string;
   sopUrl?: string;
+  version?: number;
 }
 
 export interface BinItem {

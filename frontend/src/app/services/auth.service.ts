@@ -13,7 +13,24 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  confirmPassword?: string;
+}
+
+export interface RegisterManagerRequest {
+  name: string;
+  email: string;
+  password: string;
+  department?: string;
+  role?: string;
+}
+
+export interface RegisterTeamMemberRequest {
+  name: string;
+  email: string;
+  password: string;
+  managerId: string;
+  workerId?: string;
+  da_id?: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -47,8 +64,12 @@ export class AuthService {
   constructor(private http: HttpClient) { }
 
   // User authentication
-  registerUser(data: RegisterRequest): Observable<AuthResponse> {
+  registerUser(data: RegisterTeamMemberRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/register/user`, data);
+  }
+
+  registerManager(data: RegisterManagerRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/register/manager`, data);
   }
 
   loginUser(data: LoginRequest): Observable<AuthResponse> {
@@ -67,10 +88,6 @@ export class AuthService {
     return this.http.get<AuthResponse>(`${this.baseUrl}/verify-email/user/${token}`);
   }
 
-  // Manager authentication
-  registerManager(data: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/register/manager`, data);
-  }
 
   loginManager(data: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login/manager`, data);

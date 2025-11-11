@@ -103,7 +103,7 @@ const getMe = async (req, res) => {
 // Create team member
 const createTeamMember = async (req, res) => {
   try {
-    const { name, email, password, phone, managerId, da_id, workerId, department, position, isActive } = req.body;
+    const { name, email, password, managerId, da_id, workerId, department, position, isActive } = req.body;
 
     // Validate required fields
     if (!name || !email) {
@@ -153,26 +153,31 @@ const createTeamMember = async (req, res) => {
     // Generate default password if not provided
     const defaultPassword = password || 'Password123!';
 
-    const teamMember = await TeamMember.create({
+    const teamMemberData = {
       name,
       email,
       password: defaultPassword,
-      phone: phone || '',
-      da_id: da_id || '',
       workerId: workerId || '',
       department: department || '',
       position: position || '',
       managerId: managerId || req.user.id, // Use current user as manager if not provided
       isActive: isActive !== undefined ? isActive : true
-    });
+    };
+
+    // Only set da_id if explicitly provided, otherwise let middleware generate from email
+    if (da_id) {
+      teamMemberData.da_id = da_id;
+    }
+
+    const teamMember = await TeamMember.create(teamMemberData);
 
     // Create email verification token
     const verificationToken = teamMember.createEmailVerificationToken();
     await teamMember.save({ validateBeforeSave: false });
 
-    // Send verification email to the team member
+    // Send verification email to the team member with credentials
     try {
-      await sendVerificationEmail(teamMember, verificationToken);
+      await sendVerificationEmail(teamMember, verificationToken, defaultPassword);
     } catch (emailError) {
       // If email fails, log the error but don't prevent registration
       console.error('Failed to send verification email:', emailError);
@@ -185,7 +190,6 @@ const createTeamMember = async (req, res) => {
         _id: teamMember._id,
         name: teamMember.name,
         email: teamMember.email,
-        phone: teamMember.phone,
         da_id: teamMember.da_id,
         workerId: teamMember.workerId,
         managerId: teamMember.managerId,
@@ -208,12 +212,11 @@ const createTeamMember = async (req, res) => {
 // Update team member
 const updateTeamMember = async (req, res) => {
   try {
-    const { name, email, phone, managerId, da_id, workerId, department, position, isActive } = req.body;
+    const { name, email, managerId, da_id, workerId, department, position, isActive } = req.body;
     const updateData = {};
 
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
     if (department !== undefined) updateData.department = department;
     if (position !== undefined) updateData.position = position;
     if (isActive !== undefined) updateData.isActive = isActive;
@@ -261,11 +264,10 @@ const updateTeamMember = async (req, res) => {
 // Update current team member profile
 const updateMe = async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { name } = req.body;
     const updateData = {};
 
     if (name) updateData.name = name;
-    if (phone) updateData.phone = phone;
 
     const teamMember = await TeamMember.findByIdAndUpdate(
       req.user.id,

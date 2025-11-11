@@ -70,7 +70,6 @@
             (click)="cancel()"
             [disabled]="loading">
             <i class="fas fa-times"></i>
-            <span>Cancel</span>
           </button>
           
           <button 
@@ -78,7 +77,6 @@
             class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             [disabled]="loading">
             <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-            <i class="fas fa-save" *ngIf="!loading"></i>
             <span>{{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Quick Link' : 'Create Quick Link') }}</span>
           </button>
         </div>

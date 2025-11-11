@@ -34,50 +34,31 @@
           placeholder="Enter email address"
           required>
       </div>
-    </div>
 
-    <!-- Work Information -->
-    <div class="form-section">
-      <h2>Work Information</h2>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="department">Department</label>
-          <input 
-            type="text" 
-            id="department"
-            [(ngModel)]="memberForm.department" 
-            name="department"
-            class="form-control"
-            placeholder="e.g., Engineering">
-        </div>
-
-        <div class="form-group">
-          <label for="position">Position</label>
-          <input 
-            type="text" 
-            id="position"
-            [(ngModel)]="memberForm.position" 
-            name="position"
-            class="form-control"
-            placeholder="e.g., Software Engineer">
-        </div>
-      </div>
-    </div>
-
-    <!-- Contact Information -->
-    <div class="form-section">
-      <h2>Contact Information</h2>
-      
-      <div class="form-group">
-        <label for="phone">Phone</label>
+      <div class="form-group" *ngIf="!isEditMode">
+        <label for="password">Password *</label>
         <input 
-          type="tel" 
-          id="phone"
-          [(ngModel)]="memberForm.phone" 
-          name="phone"
+          type="password" 
+          id="password"
+          [(ngModel)]="memberForm.password" 
+          name="password"
           class="form-control"
-          placeholder="Enter phone number">
+          placeholder="Enter password"
+          [required]="!isEditMode"
+          minlength="6">
+        <small class="form-text text-muted" *ngIf="!isEditMode">Password must be at least 6 characters long</small>
+      </div>
+
+      <div class="form-group">
+        <label for="workerId">Worker ID</label>
+        <input 
+          type="text" 
+          id="workerId"
+          [(ngModel)]="memberForm.workerId" 
+          name="workerId"
+          class="form-control"
+          placeholder="Enter worker ID (optional)">
+        <small class="form-text text-muted">Worker ID is optional</small>
       </div>
     </div>
 
@@ -109,7 +90,6 @@
         class="btn btn-primary"
         [disabled]="loading">
         <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-        <i class="fas fa-save" *ngIf="!loading"></i>
         {{ loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Member' : 'Add Member') }}
       </button>
       
@@ -119,7 +99,6 @@
         (click)="cancel()"
         [disabled]="loading">
         <i class="fas fa-times"></i>
-        Cancel
       </button>
     </div>
   </form>

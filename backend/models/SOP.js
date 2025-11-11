@@ -132,7 +132,9 @@ sopSchema.virtual('documentCount').get(function() {
 
 // Pre-save middleware to update version on modification
 sopSchema.pre('save', function(next) {
-  if (this.isModified() && !this.isNew) {
+  // Only auto-increment version if it wasn't explicitly set in this update
+  // If version was modified, it means it was set manually, so don't auto-increment
+  if (this.isModified() && !this.isNew && !this.isModified('version')) {
     this.version += 1;
   }
   next();

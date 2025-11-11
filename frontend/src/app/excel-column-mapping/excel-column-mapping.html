@@ -92,7 +92,6 @@
         (click)="processAndUpload()"
         [disabled]="isUploading || !isAllRequiredMapped()">
         <i class="fas fa-spinner fa-spin" *ngIf="isUploading"></i>
-        <i class="fas fa-upload" *ngIf="!isUploading"></i>
         {{ isUploading ? 'Uploading...' : 'Upload Data' }}
       </button>
       

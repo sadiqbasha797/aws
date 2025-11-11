@@ -38,57 +38,38 @@
     </div>
 
     <!-- Members Grid -->
-    <div *ngIf="!loadingMembers && teamMembers && teamMembers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+    <div *ngIf="!loadingMembers && teamMembers && teamMembers.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       <div *ngFor="let member of teamMembers" 
-           class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group max-w-sm mx-auto w-full">
+           class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group">
         
-        <!-- Card Content -->
-        <div class="p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <span class="text-white font-bold text-lg">{{ member.name.charAt(0).toUpperCase() }}</span>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors duration-200">{{ member.name }}</h3>
-                <span class="px-2 py-1 text-xs font-medium rounded-full" 
-                      [class]="member.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                  {{ member.isActive ? 'Active' : 'Inactive' }}
-                </span>
-              </div>
+        <!-- Card Content - Horizontal Layout -->
+        <div class="p-3 flex items-center justify-between">
+          <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-semibold text-sm">{{ (member.da_id || member.name || '').charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-medium text-gray-900 text-sm group-hover:text-orange-600 transition-colors duration-200 truncate">{{ member.da_id || member.name || 'N/A' }}</h3>
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full inline-block mt-1" 
+                    [class]="member.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                {{ member.isActive ? 'Active' : 'Inactive' }}
+              </span>
             </div>
           </div>
-
-          <div class="space-y-2 mb-4">
-            <div class="flex items-center text-sm text-gray-600">
-              <i class="fas fa-envelope mr-2 w-4"></i>
-              <span class="truncate">{{ member.email }}</span>
-            </div>
-            <div *ngIf="member.department" class="flex items-center text-sm text-gray-600">
-              <i class="fas fa-building mr-2 w-4"></i>
-              <span>{{ member.department }}</span>
-            </div>
-            <div *ngIf="member.position" class="flex items-center text-sm text-gray-600">
-              <i class="fas fa-briefcase mr-2 w-4"></i>
-              <span>{{ member.position }}</span>
-            </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex items-center space-x-1 ml-2 flex-shrink-0">
+            <button
+              (click)="editMember(member); $event.stopPropagation()"
+              class="text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-medium text-xs transition-colors duration-200 flex items-center justify-center px-2 py-1.5 rounded">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button
+              (click)="deleteMember(member); $event.stopPropagation()"
+              class="text-red-600 hover:text-red-700 hover:bg-red-50 font-medium text-xs transition-colors duration-200 flex items-center justify-center px-2 py-1.5 rounded">
+              <i class="fas fa-trash text-xs"></i>
+            </button>
           </div>
-        </div>
-
-        <!-- Card Footer -->
-        <div class="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100 flex space-x-2">
-          <button
-            (click)="editMember(member); $event.stopPropagation()"
-            class="flex-1 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors duration-200 flex items-center justify-center space-x-1">
-            <i class="fas fa-edit"></i>
-            <span>Edit</span>
-          </button>
-          <button
-            (click)="deleteMember(member); $event.stopPropagation()"
-            class="flex-1 text-red-600 hover:text-red-700 font-medium text-sm transition-colors duration-200 flex items-center justify-center space-x-1">
-            <i class="fas fa-trash"></i>
-            <span>Delete</span>
-          </button>
         </div>
       </div>
     </div>

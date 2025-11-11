@@ -92,5 +92,35 @@ export class DashboardService {
       { headers: this.getHeaders() }
     );
   }
+
+  getReliabilityMonthlyData(): Observable<{ message: string; data: MonthlyReliabilityData[] }> {
+    return this.http.get<{ message: string; data: MonthlyReliabilityData[] }>(
+      `${this.baseUrl}/dashboard/reliability/monthly`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  getProductivityWeeklyData(): Observable<{ message: string; data: WeeklyProductivityData[] }> {
+    return this.http.get<{ message: string; data: WeeklyProductivityData[] }>(
+      `${this.baseUrl}/dashboard/productivity/weekly`,
+      { headers: this.getHeaders() }
+    );
+  }
+}
+
+export interface MonthlyReliabilityData {
+  month: string;
+  monthNumber: number;
+  year: number;
+  avgReliabilityScore: number;
+  recordCount: number;
+}
+
+export interface WeeklyProductivityData {
+  week: string;
+  weekNumber: number;
+  year: number;
+  avgProductivity: number;
+  recordCount: number;
 }
 

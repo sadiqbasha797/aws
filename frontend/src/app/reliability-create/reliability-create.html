@@ -44,9 +44,9 @@
       <h2>Upload Instructions</h2>
       <div class="info-box">
         <ul>
-          <li>Your Excel file should contain these columns: Worker ID, DA ID, Total Tasks, Total Opportunities, Total Segments Matching, Total Label Matching, Total Defects, Overall Reliability Score %</li>
+          <li>Your Excel/CSV file should contain these columns: Worker ID, DA ID, Total Tasks, Total Opportunities, Total Segments Matching, Total Label Matching, Total Defects, Overall Reliability Score %</li>
           <li>Process Name, Job ID, Year, and Month will be applied to all rows from the form below</li>
-          <li>Only .xlsx and .xls files are supported</li>
+          <li>Only .xlsx, .xls, and .csv files are supported</li>
         </ul>
       </div>
     </div>
@@ -122,16 +122,16 @@
             type="file" 
             id="excel-file-upload"
             (change)="onExcelFileSelected($event)"
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.csv"
             class="file-input">
           
           <label for="excel-file-upload" class="file-input-label">
             <i class="fas fa-file-excel"></i>
-            Choose Excel File
+            Choose Excel/CSV File
           </label>
           
           <p class="file-info">
-            Upload Excel file (.xlsx, .xls)
+            Upload Excel or CSV file (.xlsx, .xls, .csv)
           </p>
           
           <p *ngIf="selectedExcelFile" class="selected-file">
@@ -174,7 +174,6 @@
           class="btn btn-primary"
           [disabled]="isUploadingExcel || !selectedExcelFile || !excelUploadForm.processname || !excelUploadForm.job_id">
           <i class="fas fa-spinner fa-spin" *ngIf="isUploadingExcel"></i>
-          <i class="fas fa-upload" *ngIf="!isUploadingExcel"></i>
           {{ isUploadingExcel ? 'Uploading...' : 'Upload Data' }}
         </button>
         
@@ -184,7 +183,6 @@
           (click)="cancel()"
           [disabled]="isUploadingExcel">
           <i class="fas fa-times"></i>
-          Cancel
         </button>
       </div>
     </form>
@@ -392,7 +390,6 @@
           class="btn btn-primary"
           [disabled]="loading || isLoadingTeamMembers">
           <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-          <i class="fas fa-save" *ngIf="!loading"></i>
           {{ loading ? 'Creating...' : 'Create Reliability Record' }}
         </button>
         
@@ -402,7 +399,6 @@
           (click)="cancel()"
           [disabled]="loading">
           <i class="fas fa-times"></i>
-          Cancel
         </button>
       </div>
     </form>
