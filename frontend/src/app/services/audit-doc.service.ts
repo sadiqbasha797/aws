@@ -16,6 +16,7 @@ export interface AuditDoc {
   };
   date: Date | string;
   process?: string;
+  job_id?: string;
   createdBy: string;
   managerId?: string;
   isActive?: boolean;
@@ -59,6 +60,8 @@ export class AuditDocService {
     page?: number;
     limit?: number;
     search?: string;
+    process?: string;
+    job_id?: string;
     dateFrom?: string;
     dateTo?: string;
   }): Observable<AuditDocResponse> {
@@ -86,12 +89,15 @@ export class AuditDocService {
     });
   }
 
-  createAuditDoc(file: File, date: string, process?: string): Observable<AuditDocResponse> {
+  createAuditDoc(file: File, date: string, process?: string, job_id?: string): Observable<AuditDocResponse> {
     const formData = new FormData();
     formData.append('document', file);
     formData.append('date', date);
     if (process) {
       formData.append('process', process);
+    }
+    if (job_id) {
+      formData.append('job_id', job_id);
     }
 
     const token = this.authService.getToken();
@@ -105,7 +111,7 @@ export class AuditDocService {
     });
   }
 
-  updateAuditDoc(id: string, file: File | null, date?: string, process?: string): Observable<AuditDocResponse> {
+  updateAuditDoc(id: string, file: File | null, date?: string, process?: string, job_id?: string): Observable<AuditDocResponse> {
     const formData = new FormData();
     if (file) {
       formData.append('document', file);
@@ -115,6 +121,9 @@ export class AuditDocService {
     }
     if (process !== undefined) {
       formData.append('process', process);
+    }
+    if (job_id !== undefined) {
+      formData.append('job_id', job_id);
     }
 
     const token = this.authService.getToken();

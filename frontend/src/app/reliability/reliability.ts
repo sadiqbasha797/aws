@@ -172,6 +172,9 @@ export class Reliability implements OnInit {
   reliabilityDocTotalPages = 1;
   reliabilityDocTotalRecords = 0;
   reliabilityDocSearch = '';
+  selectedReliabilityDocFile: File | null = null;
+  isUploadingReliabilityDoc = false;
+  showReliabilityDocUploadForm = false;
 
   constructor(
     private reliabilityService: ReliabilityService,
@@ -186,13 +189,55 @@ export class Reliability implements OnInit {
   ngOnInit() {
     this.initializeComponent();
     
-    // Check for query params to set active tab
+    // Check for query params to navigate to specific process and show audit docs
     this.route.queryParams.subscribe(params => {
-      if (params['tab'] === 'audit-docs' && this.userRole === 'manager') {
-        this.activeTab = 'audit-docs';
-        this.loadAuditDocs();
+      if (params['process'] && params['showAudit'] === 'true' && this.userRole === 'manager') {
+        const processName = params['process'];
+        // Try to navigate immediately if data is already loaded
+        if (this.processGroups.length > 0) {
+          // Data is already loaded, navigate immediately
+          setTimeout(() => {
+            this.navigateToProcessAudit(processName);
+          }, 100);
+        } else {
+          // Data not loaded yet, store for later
+          this.pendingProcessNavigation = processName;
+        }
       }
     });
+  }
+
+  private pendingProcessNavigation: string | null = null;
+
+  navigateToProcessAudit(processName: string) {
+    // Find the process in processGroups
+    let processGroup = this.processGroups.find(p => p.processName === processName);
+    
+    // If process doesn't exist in processGroups (no reliability data), create a minimal process group
+    if (!processGroup) {
+      processGroup = {
+        processName: processName,
+        jobGroups: [],
+        isExpanded: false
+      };
+      // Add it to processGroups so it can be displayed
+      this.processGroups.push(processGroup);
+      // Re-sort after adding
+      this.processGroups.sort((a, b) => a.processName.localeCompare(b.processName));
+    }
+    
+    // Set the view to show this process
+    this.selectedProcessForView = processGroup;
+    this.currentView = 'jobIds';
+    // Expand the process
+    this.expandedProcesses.add(processName);
+    // Set the process view tab to audit
+    this.processViewTab = 'audit';
+    // Load audit docs for this process
+    this.loadAuditDocs();
+    // Clear pending navigation
+    this.pendingProcessNavigation = null;
+    return true;
   }
 
   private initializeComponent() {
@@ -1259,6 +1304,15 @@ export class Reliability implements OnInit {
     this.processGroups.forEach(process => {
       process.jobGroups.sort((a, b) => a.jobId.localeCompare(b.jobId));
     });
+
+    // Check if there's a pending navigation to a process audit tab
+    if (this.pendingProcessNavigation) {
+      const processName = this.pendingProcessNavigation;
+      // Navigate to the process audit tab (this will create the process if it doesn't exist)
+      setTimeout(() => {
+        this.navigateToProcessAudit(processName);
+      }, 100);
+    }
   }
 
   toggleProcess(processName: string) {
@@ -1688,6 +1742,16 @@ export class Reliability implements OnInit {
       params.search = this.auditDocSearch;
     }
 
+    // Filter by process if available
+    if (this.selectedProcessForView?.processName) {
+      params.process = this.selectedProcessForView.processName;
+    }
+
+    // Filter by job_id if viewing a specific job
+    if (this.currentView === 'records' && this.selectedJobGroupForView?.jobId) {
+      params.job_id = this.selectedJobGroupForView.jobId;
+    }
+
     this.auditDocService.getAllAuditDocs(params).subscribe({
       next: (response) => {
         if (response.status === 'success' && response.data?.auditDocs) {
@@ -1706,10 +1770,13 @@ export class Reliability implements OnInit {
   }
 
   showCreateAuditDocForm() {
-    // Navigate to separate create page, passing process name if available
+    // Navigate to separate create page, passing process name and job_id if available
     const queryParams: any = {};
     if (this.selectedProcessForView?.processName) {
       queryParams.process = this.selectedProcessForView.processName;
+    }
+    if (this.selectedJobGroupForView?.jobId) {
+      queryParams.job_id = this.selectedJobGroupForView.jobId;
     }
     this.router.navigate(['/audit-docs/create'], { queryParams });
   }
@@ -1911,6 +1978,98 @@ export class Reliability implements OnInit {
       month: 'short',
       day: 'numeric'
     });
+  }
+
+  onReliabilityDocFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) {
+      this.selectedReliabilityDocFile = null;
+      return;
+    }
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel.sheet.macroEnabled.12',
+      'text/csv',
+      'application/csv',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    const validExtensions = ['.xlsx', '.xls', '.csv', '.pdf', '.doc', '.docx'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      this.errorMessage = 'Please select a valid file (.xlsx, .xls, .csv, .pdf, .doc, .docx)';
+      this.selectedReliabilityDocFile = null;
+      return;
+    }
+
+    this.selectedReliabilityDocFile = file;
+    this.errorMessage = '';
+  }
+
+  uploadReliabilityDoc() {
+    if (!this.selectedReliabilityDocFile) {
+      this.errorMessage = 'Please select a file to upload';
+      return;
+    }
+
+    if (this.isUploadingReliabilityDoc) {
+      return;
+    }
+
+    this.isUploadingReliabilityDoc = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    // Get processname and job_id from current view context
+    const processname = this.selectedProcessForView?.processName;
+    const job_id = this.selectedJobGroupForView?.jobId;
+
+    this.reliabilityDocService.createReliabilityDoc(
+      this.selectedReliabilityDocFile,
+      processname,
+      job_id
+    ).subscribe({
+      next: (response) => {
+        this.isUploadingReliabilityDoc = false;
+        if (response.status === 'success') {
+          this.successMessage = 'Reliability document uploaded successfully';
+          this.selectedReliabilityDocFile = null;
+          this.showReliabilityDocUploadForm = false;
+          // Reset file input
+          const fileInput = document.getElementById('reliability-doc-file-input') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
+          }
+          setTimeout(() => {
+            this.loadReliabilityDocs();
+          }, 100);
+        } else {
+          this.errorMessage = response.message || 'Upload failed';
+        }
+      },
+      error: (error) => {
+        this.isUploadingReliabilityDoc = false;
+        console.error('Error uploading reliability doc:', error);
+        this.errorMessage = error.error?.message || 'Failed to upload reliability document';
+      }
+    });
+  }
+
+  cancelReliabilityDocUpload() {
+    this.selectedReliabilityDocFile = null;
+    this.showReliabilityDocUploadForm = false;
+    this.errorMessage = '';
+    // Reset file input
+    const fileInput = document.getElementById('reliability-doc-file-input') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }
 
   formatReliabilityDocTimestamp(date: string | Date): string {

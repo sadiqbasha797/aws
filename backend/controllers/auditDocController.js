@@ -24,6 +24,14 @@ const getAllAuditDocs = async (req, res) => {
       ];
     }
 
+    if (req.query.process) {
+      filter.process = req.query.process;
+    }
+
+    if (req.query.job_id) {
+      filter.job_id = req.query.job_id;
+    }
+
     if (req.query.dateFrom) {
       filter.date = { ...filter.date, $gte: new Date(req.query.dateFrom) };
     }
@@ -101,7 +109,7 @@ const getAuditDoc = async (req, res) => {
 // Create audit doc (Manager only)
 const createAuditDoc = async (req, res) => {
   try {
-    const { date, process } = req.body;
+    const { date, process, job_id } = req.body;
 
     if (!req.file) {
       return res.status(400).json({
@@ -143,6 +151,10 @@ const createAuditDoc = async (req, res) => {
       auditDocData.process = process;
     }
 
+    if (job_id) {
+      auditDocData.job_id = job_id;
+    }
+
     const auditDoc = await AuditDoc.create(auditDocData);
 
     res.status(201).json({
@@ -164,7 +176,7 @@ const createAuditDoc = async (req, res) => {
 // Update audit doc (Manager only)
 const updateAuditDoc = async (req, res) => {
   try {
-    const { date, process } = req.body;
+    const { date, process, job_id } = req.body;
 
     const auditDoc = await AuditDoc.findById(req.params.id);
 
@@ -216,6 +228,10 @@ const updateAuditDoc = async (req, res) => {
 
     if (process !== undefined) {
       updateData.process = process;
+    }
+
+    if (job_id !== undefined) {
+      updateData.job_id = job_id;
     }
 
     const updatedAuditDoc = await AuditDoc.findByIdAndUpdate(

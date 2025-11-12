@@ -23,7 +23,8 @@ export class AuditDocCreateComponent implements OnInit {
   auditDocForm = {
     file: null as File | null,
     date: new Date().toISOString().split('T')[0],
-    process: ''
+    process: '',
+    job_id: ''
   };
 
   selectedFile: File | null = null;
@@ -42,10 +43,13 @@ export class AuditDocCreateComponent implements OnInit {
     // Load available processes
     this.loadProcesses();
     
-    // Check for process query parameter
+    // Check for process and job_id query parameters
     this.route.queryParams.subscribe(queryParams => {
       if (queryParams['process']) {
         this.auditDocForm.process = queryParams['process'];
+      }
+      if (queryParams['job_id']) {
+        this.auditDocForm.job_id = queryParams['job_id'];
       }
     });
     
@@ -84,6 +88,7 @@ export class AuditDocCreateComponent implements OnInit {
           this.existingAuditDoc = response.data.auditDoc;
           this.auditDocForm.date = new Date(response.data.auditDoc.date).toISOString().split('T')[0];
           this.auditDocForm.process = response.data.auditDoc.process || '';
+          this.auditDocForm.job_id = response.data.auditDoc.job_id || '';
         }
         this.loading = false;
       },
@@ -131,12 +136,14 @@ export class AuditDocCreateComponent implements OnInit {
           this.editingId,
           this.auditDocForm.file,
           this.auditDocForm.date,
-          this.auditDocForm.process || undefined
+          this.auditDocForm.process || undefined,
+          this.auditDocForm.job_id || undefined
         )
       : this.auditDocService.createAuditDoc(
           this.auditDocForm.file!,
           this.auditDocForm.date,
-          this.auditDocForm.process || undefined
+          this.auditDocForm.process || undefined,
+          this.auditDocForm.job_id || undefined
         );
 
     operation.subscribe({
@@ -147,7 +154,14 @@ export class AuditDocCreateComponent implements OnInit {
             ? 'Audit document updated successfully'
             : 'Audit document created successfully';
           setTimeout(() => {
-            this.router.navigate(['/reliability'], { queryParams: { tab: 'audit-docs' } });
+            // Navigate back to reliability page
+            // If process is set, pass it as query param to show that process's audit docs
+            const queryParams: any = {};
+            if (this.auditDocForm.process) {
+              queryParams.process = this.auditDocForm.process;
+              queryParams.showAudit = 'true';
+            }
+            this.router.navigate(['/reliability'], { queryParams });
           }, 1000);
         } else {
           this.error = response.message || 'Operation failed';
@@ -162,7 +176,14 @@ export class AuditDocCreateComponent implements OnInit {
   }
 
   cancel() {
-    this.router.navigate(['/reliability'], { queryParams: { tab: 'audit-docs' } });
+    // Navigate back to reliability page
+    // If process is set, pass it as query param to show that process's audit docs
+    const queryParams: any = {};
+    if (this.auditDocForm.process) {
+      queryParams.process = this.auditDocForm.process;
+      queryParams.showAudit = 'true';
+    }
+    this.router.navigate(['/reliability'], { queryParams });
   }
 }
 

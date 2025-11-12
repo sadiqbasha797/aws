@@ -208,7 +208,7 @@
           (click)="showCreateAuditDocForm()" 
           class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2">
           <i class="fas fa-plus"></i>
-          <span>Add Audit Doc</span>
+          <span>Add Document</span>
         </button>
       </div>
     </div>
@@ -220,7 +220,8 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
@@ -237,7 +238,8 @@
                 </a>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatAuditDocDate(auditDoc.date) }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.process || '-' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.process || '-' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.job_id || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ auditDoc.createdBy }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatAuditDocTimestamp(auditDoc.createdAt!) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatAuditDocTimestamp(auditDoc.updatedAt!) }}</td>
@@ -261,7 +263,7 @@
               </td>
             </tr>
             <tr *ngIf="auditDocs.length === 0 && !isLoading">
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+              <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                 <i class="fas fa-file-alt text-4xl mb-4 text-gray-300"></i>
                 <p class="text-lg font-semibold">No audit documents found</p>
                 <p class="text-sm mt-2">Click "Add Audit Doc" to create your first audit document</p>
@@ -787,6 +789,68 @@
                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium transition-colors duration-200">
                   Clear
                 </button>
+                <button 
+                  (click)="showReliabilityDocUploadForm = !showReliabilityDocUploadForm" 
+                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                  {{ showReliabilityDocUploadForm ? 'Cancel Upload' : 'Upload' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Form -->
+          <div *ngIf="showReliabilityDocUploadForm" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div class="max-w-2xl">
+              <h4 class="text-md font-semibold text-gray-900 mb-4">
+                <i class="fas fa-cloud-upload-alt text-orange-500 mr-2"></i>
+                Upload Reliability Document
+              </h4>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Document File <span class="text-red-500">*</span>
+                  </label>
+                  <div class="flex items-center gap-3">
+                    <input 
+                      type="file" 
+                      id="reliability-doc-file-input"
+                      (change)="onReliabilityDocFileSelected($event)"
+                      accept=".xlsx,.xls,.csv,.pdf,.doc,.docx"
+                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                    <p *ngIf="selectedReliabilityDocFile" class="text-sm text-gray-600 flex items-center gap-2">
+                      <i class="fas fa-check-circle text-green-500"></i>
+                      {{ selectedReliabilityDocFile.name }} ({{ (selectedReliabilityDocFile.size / 1024 / 1024).toFixed(2) }} MB)
+                    </p>
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Supported formats: .xlsx, .xls, .csv, .pdf, .doc, .docx
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button 
+                    (click)="uploadReliabilityDoc()" 
+                    [disabled]="!selectedReliabilityDocFile || isUploadingReliabilityDoc"
+                    class="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <i class="fas fa-spinner fa-spin" *ngIf="isUploadingReliabilityDoc"></i>
+                    {{ isUploadingReliabilityDoc ? 'Uploading...' : 'Upload' }}
+                  </button>
+                  <button 
+                    (click)="cancelReliabilityDocUpload()" 
+                    [disabled]="isUploadingReliabilityDoc"
+                    class="bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors duration-200">
+                    Cancel
+                  </button>
+                </div>
+                <div *ngIf="selectedProcessForView?.processName || selectedJobGroupForView?.jobId" class="text-xs text-gray-500 mt-2">
+                  <p *ngIf="selectedProcessForView?.processName">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Process: {{ selectedProcessForView.processName }}
+                  </p>
+                  <p *ngIf="selectedJobGroupForView?.jobId">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Job ID: {{ selectedJobGroupForView.jobId }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -799,7 +863,6 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year/Month</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -816,10 +879,6 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.processname || '-' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.job_id || '-' }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span *ngIf="reliabilityDoc.year && reliabilityDoc.month">{{ reliabilityDoc.year }}/{{ reliabilityDoc.month }}</span>
-                      <span *ngIf="!reliabilityDoc.year || !reliabilityDoc.month">-</span>
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ reliabilityDoc.createdBy }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatReliabilityDocTimestamp(reliabilityDoc.createdAt!) }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -835,7 +894,7 @@
                     </td>
                   </tr>
                   <tr *ngIf="reliabilityDocs.length === 0 && !isLoading">
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                       <i class="fas fa-file-excel text-4xl mb-4 text-gray-300"></i>
                       <p class="text-lg font-semibold">No reliability documents found</p>
                       <p class="text-sm mt-2">Upload Excel/CSV files from the reliability create page to see them here</p>
